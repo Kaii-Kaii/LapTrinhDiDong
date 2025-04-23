@@ -1,28 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:qltncn/model/GirdItem.dart';
-import 'package:qltncn/screens/s_Khac/TienIch/han_muc_chi_screen.dart';// Import màn hình đích
+import 'package:qltncn/screens/s_Khac/TienIch/han_muc_chi_screen.dart';
 
 class KhacMain extends StatelessWidget {
   final List<GirdItem> tinhNangList = [
-    GirdItem(title: 'Hạn mức chi', icon: Icons.money_off, iconColor: Colors.red),
-    GirdItem(title: 'Hạng mục thu/chi', icon: Icons.list_alt, iconColor: Colors.blueAccent),
-    GirdItem(title: 'Danh sách mua sắm', icon: Icons.shopping_cart, iconColor: Colors.blue),
-    GirdItem(title: 'Ghi chép định kỳ', icon: Icons.repeat, iconColor: Colors.orange),
+    GirdItem(
+      title: 'Hạn mức chi',
+      icon: Icons.money_off,
+      iconColor: Colors.red,
+    ),
+    GirdItem(
+      title: 'Hạng mục thu/chi',
+      icon: Icons.list_alt,
+      iconColor: Colors.blueAccent,
+    ),
+    GirdItem(
+      title: 'Danh sách mua sắm',
+      icon: Icons.shopping_cart,
+      iconColor: Colors.blue,
+    ),
+    GirdItem(
+      title: 'Ghi chép định kỳ',
+      icon: Icons.repeat,
+      iconColor: Colors.orange,
+    ),
     GirdItem(title: 'Ghi chép mẫu', icon: Icons.note, iconColor: Colors.purple),
-    GirdItem(title: 'Du lịch', icon: Icons.travel_explore, iconColor: Colors.green),
-    GirdItem(title: 'Dự thu/Dự chi', icon: Icons.archive, iconColor: Colors.amber),
-    GirdItem(title: 'Xuất khẩu dữ liệu', icon: Icons.file_upload, iconColor: Colors.deepPurple),
+    GirdItem(
+      title: 'Du lịch',
+      icon: Icons.travel_explore,
+      iconColor: Colors.green,
+    ),
+    GirdItem(
+      title: 'Dự thu/Dự chi',
+      icon: Icons.archive,
+      iconColor: Colors.amber,
+    ),
+    GirdItem(
+      title: 'Xuất khẩu dữ liệu',
+      icon: Icons.file_upload,
+      iconColor: Colors.deepPurple,
+    ),
   ];
 
   final List<GirdItem> tienIchList = [
-    GirdItem(title: 'Tra cứu tỷ giá', icon: Icons.money_off_csred_outlined, iconColor: Colors.blue),
-    GirdItem(title: 'Tính lãi vay', icon: Icons.calculate, iconColor: Colors.teal),
-    GirdItem(title: 'Tiết kiệm gửi góp', icon: Icons.savings, iconColor: Colors.red),
-    GirdItem(title: 'Thuế TNCN', icon: Icons.people_outline, iconColor: Colors.green),
-    GirdItem(title: 'Chia tiền', icon: Icons.money_rounded, iconColor: Colors.orange),
-    GirdItem(title: 'Widget', icon: Icons.widgets_rounded, iconColor: Colors.lightBlue),
-    GirdItem(title: 'Tìm kế toán dịch vụ', icon: Icons.event, iconColor: Colors.lightGreen),
-    GirdItem(title: 'Premium miễn phí', icon: Icons.compare_arrows_rounded, iconColor: Colors.purple),
+    GirdItem(
+      title: 'Tra cứu tỷ giá',
+      icon: Icons.money_off_csred_outlined,
+      iconColor: Colors.blue,
+    ),
+    GirdItem(
+      title: 'Tính lãi vay',
+      icon: Icons.calculate,
+      iconColor: Colors.teal,
+    ),
+    GirdItem(
+      title: 'Tiết kiệm gửi góp',
+      icon: Icons.savings,
+      iconColor: Colors.red,
+    ),
+    GirdItem(
+      title: 'Thuế TNCN',
+      icon: Icons.people_outline,
+      iconColor: Colors.green,
+    ),
+    GirdItem(
+      title: 'Chia tiền',
+      icon: Icons.money_rounded,
+      iconColor: Colors.orange,
+    ),
+    GirdItem(
+      title: 'Widget',
+      icon: Icons.widgets_rounded,
+      iconColor: Colors.lightBlue,
+    ),
+    GirdItem(
+      title: 'Tìm kế toán dịch vụ',
+      icon: Icons.event,
+      iconColor: Colors.lightGreen,
+    ),
+    GirdItem(
+      title: 'Premium miễn phí',
+      icon: Icons.compare_arrows_rounded,
+      iconColor: Colors.purple,
+    ),
   ];
 
   @override
@@ -58,15 +118,27 @@ class KhacMain extends StatelessWidget {
           const CircleAvatar(
             radius: 24,
             backgroundColor: Colors.lightBlue,
-            child: Text("N", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(
+              "N",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           const SizedBox(width: 12),
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("nguyenvuonghongdao2004", style: TextStyle(fontWeight: FontWeight.bold)),
-                Text("nguyenvuonghongdao2004@gmail.com", style: TextStyle(color: Colors.grey)),
+                Text(
+                  "nguyenvuonghongdao2004",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  "nguyenvuonghongdao2004@gmail.com",
+                  style: TextStyle(color: Colors.grey),
+                ),
               ],
             ),
           ),
@@ -82,13 +154,22 @@ class KhacMain extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Colors.orangeAccent, Colors.deepOrange]),
+        gradient: const LinearGradient(
+          colors: [Colors.orangeAccent, Colors.deepOrange],
+        ),
         borderRadius: BorderRadius.circular(16),
       ),
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("Nâng cấp Premium", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(
+            "Nâng cấp Premium",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
           SizedBox(width: 10),
           Icon(Icons.rocket_launch, color: Colors.white),
         ],
@@ -101,15 +182,25 @@ class KhacMain extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          _buildInfoCard(Icons.monetization_on, "Xu của bạn", "100 xu", Colors.orange),
+          _buildInfoCard(
+            Icons.monetization_on,
+            "Xu của bạn",
+            "100 xu",
+            Colors.orange,
+          ),
           const SizedBox(width: 8),
-          _buildInfoCard(Icons.share, "Mã chia sẻ", "4402410", Colors.blue),
+          _buildInfoCard(Icons.share, "Mã chia sẻ", "44010", Colors.blue),
         ],
       ),
     );
   }
 
-  Widget _buildInfoCard(IconData icon, String label, String value, Color iconColor) {
+  Widget _buildInfoCard(
+    IconData icon,
+    String label,
+    String value,
+    Color iconColor,
+  ) {
     return Expanded(
       child: Container(
         height: 60,
@@ -135,41 +226,78 @@ class KhacMain extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(BuildContext context, String title, List<GirdItem> items) {
+  Widget _buildSection(
+    BuildContext context,
+    String title,
+    List<GirdItem> items,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 4,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
-            children: List.generate(items.length, (index) {
-              final item = items[index];
-              return InkWell(
-                onTap: () => _handleTap(context, item.title),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: item.iconColor.withOpacity(0.1),
-                      child: Icon(item.icon, color: item.iconColor),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            GridView.count(
+              crossAxisCount: 4,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.75,
+              children: List.generate(items.length, (index) {
+                final item = items[index];
+                return InkWell(
+                  onTap: () => _handleTap(context, item.title),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 4,
+                          offset: Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(item.title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12)),
-                  ],
-                ),
-              );
-            }),
-          ),
-        ],
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 6,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: item.iconColor.withOpacity(0.1),
+                          child: Icon(item.icon, color: item.iconColor),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item.title,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 11),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -177,11 +305,15 @@ class KhacMain extends StatelessWidget {
   void _handleTap(BuildContext context, String title) {
     switch (title) {
       case 'Hạn mức chi':
-        Navigator.push(context, MaterialPageRoute(builder: (_) => HanMucChiScreen()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => HanMucChiScreen()),
+        );
         break;
-      // TODO: Thêm các điều hướng khác ở đây
       default:
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Chức năng "$title" đang phát triển')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Chức năng "$title" đang phát triển')),
+        );
     }
   }
 }
