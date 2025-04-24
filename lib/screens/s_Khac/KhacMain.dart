@@ -102,6 +102,8 @@ class KhacMain extends StatelessWidget {
             _buildPointAndCode(),
             _buildSection(context, "Tính năng", tinhNangList),
             _buildSection(context, "Tiện ích", tienIchList),
+            const SizedBox(height: 12),
+            _buildSettingsAndSupport(),
             const SizedBox(height: 24),
           ],
         ),
@@ -316,4 +318,65 @@ class KhacMain extends StatelessWidget {
         );
     }
   }
+}
+
+Widget _buildSettingsAndSupport() {
+  return Column(
+    children: [
+      _buildSettingsTile(Icons.settings, "Cài đặt chung", () {}),
+      _buildSettingsTile(Icons.storage, "Cài đặt dữ liệu", () {}),
+      _buildSettingsTile(
+        Icons.share,
+        "Giới thiệu cho bạn",
+        () {
+          // Chia sẻ
+        },
+        trailing: const Text(
+          "Chia sẻ ngay",
+          style: TextStyle(color: Colors.blue),
+        ),
+      ),
+      _buildSettingsTile(Icons.star_border, "Đánh giá ứng dụng", () {}),
+      _buildSettingsTile(
+        Icons.feedback_outlined,
+        "Góp ý với nhà phát triển",
+        () {},
+      ),
+      _buildSettingsTile(Icons.info_outline, "Trợ giúp và thông tin", () {}),
+      const SizedBox(height: 8),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        color: Colors.white,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: const [
+            Row(
+              children: [
+                Icon(Icons.sync, color: Colors.blue),
+                SizedBox(width: 8),
+                Text("Đồng bộ dữ liệu"),
+              ],
+            ),
+            Text("24/04/2025 12:09", style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildSettingsTile(
+  IconData icon,
+  String title,
+  VoidCallback onTap, {
+  Widget? trailing,
+}) {
+  return ListTile(
+    leading: Icon(icon, color: Colors.grey),
+    title: Text(title),
+    trailing: trailing ?? const Icon(Icons.chevron_right),
+    onTap: onTap,
+    tileColor: Colors.white,
+    dense: true,
+  );
 }
