@@ -17,10 +17,7 @@ class _HomePageState extends State<HomePage> {
 
   static final List<Widget> _widgetOptions = <Widget>[
    // OverviewScreen(), // Gọi màn hình Tổng quan
-   const Text(
-      'Tổng quan',
-      style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-    ),
+    TongQuanScreen(),
     TaikhoanMain(),
     NhapVaoScreen(),
     // LichScreen(),
