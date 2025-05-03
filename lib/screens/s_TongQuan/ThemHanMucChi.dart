@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:qltncn/database/database_helper.dart';
 import 'package:intl/intl.dart';
 
 class ThemHanMucChi extends StatefulWidget {
@@ -82,15 +81,18 @@ class _ThemHanMucChiState extends State<ThemHanMucChi> {
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Text('Chọn danh mục'),
                     ),
-                    items: categories.map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text(value),
-                        ),
-                      );
-                    }).toList(),
+                    items:
+                        categories.map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: Text(value),
+                            ),
+                          );
+                        }).toList(),
                     onChanged: (String? newValue) {
                       if (newValue != null) {
                         setState(() {
@@ -177,7 +179,8 @@ class _ThemHanMucChiState extends State<ThemHanMucChi> {
               // Save Button
               ElevatedButton(
                 onPressed: () {
-                  if (_formKey.currentState!.validate() && selectedCategory.isNotEmpty) {
+                  if (_formKey.currentState!.validate() &&
+                      selectedCategory.isNotEmpty) {
                     // TODO: Save the spending limit to database
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -217,4 +220,4 @@ class _ThemHanMucChiState extends State<ThemHanMucChi> {
     _amountController.dispose();
     super.dispose();
   }
-} 
+}

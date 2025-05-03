@@ -1,10 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class RegisterScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController =
       TextEditingController();
+
+  RegisterScreen({super.key});
+
+  Future<void> _register(BuildContext context) async {
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+    String confirmPassword = confirmPasswordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng điền đầy đủ thông tin')),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Mật khẩu không khớp')));
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://10.0.2.2:7283/api/TaiKhoan'), // Đảm bảo URL đúng
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "mataikhoan": "tk0003", // hoặc bỏ luôn dòng này cũng được
+          "maquyen": "Q002",
+          "tendangnhap": email,
+          "matkhau": password,
+          "email": email,
+          "isemailconfirmed": 1,
+          "emailconfirmationtoken": null,
+          "otp": null,
+          "khachHang": null,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print("Đăng ký thành công!");
+      } else {
+        print("Lỗi server: ${response.statusCode}");
+        print("Nội dung lỗi: ${response.body}"); // 🔍 Dòng này rất quan trọng
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi kết nối: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,13 +108,11 @@ class RegisterScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: () {
-                    // Xử lý đăng ký
-                  },
-                  child: const Text("Đăng ký"),
+                  onPressed: () => _register(context),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
                   ),
+                  child: const Text("Đăng ký"),
                 ),
                 TextButton(
                   onPressed: () {

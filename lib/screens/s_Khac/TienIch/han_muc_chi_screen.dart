@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class HanMucChiScreen extends StatelessWidget {
+  const HanMucChiScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
