@@ -85,6 +85,8 @@ class KhacMain extends StatelessWidget {
     ),
   ];
 
+  // const KhacMain({super.key});
+  KhacMain({super.key});
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -4,15 +4,50 @@ import 'package:qltncn/model/GirdItem.dart';
 
 class Main_BaoCao extends StatelessWidget {
   final List<GirdItem> items = [
-    GirdItem(title: 'Tài chính hiện tại', icon: Icons.show_chart, iconColor: Colors.blue),
-    GirdItem(title: 'Tình hình thu chi', icon: Icons.stacked_line_chart, iconColor: Colors.teal),
-    GirdItem(title: 'Phân tích chi tiêu', icon: Icons.bar_chart, iconColor: Colors.red),
-    GirdItem(title: 'Phân tích thu', icon: Icons.bar_chart, iconColor: Colors.green),
-    GirdItem(title: 'Theo dõi vay nợ', icon: Icons.receipt_long, iconColor: Colors.orange),
-    GirdItem(title: 'Đối tượng thu/chi', icon: Icons.group, iconColor: Colors.lightBlue),
-    GirdItem(title: 'Chuyến đi/Sự kiện', icon: Icons.event, iconColor: Colors.lightGreen),
-    GirdItem(title: 'Phân tích tài chính', icon: Icons.pie_chart_outline, iconColor: Colors.purple),
+    GirdItem(
+      title: 'Tài chính hiện tại',
+      icon: Icons.show_chart,
+      iconColor: Colors.blue,
+    ),
+    GirdItem(
+      title: 'Tình hình thu chi',
+      icon: Icons.stacked_line_chart,
+      iconColor: Colors.teal,
+    ),
+    GirdItem(
+      title: 'Phân tích chi tiêu',
+      icon: Icons.bar_chart,
+      iconColor: Colors.red,
+    ),
+    GirdItem(
+      title: 'Phân tích thu',
+      icon: Icons.bar_chart,
+      iconColor: Colors.green,
+    ),
+    GirdItem(
+      title: 'Theo dõi vay nợ',
+      icon: Icons.receipt_long,
+      iconColor: Colors.orange,
+    ),
+    GirdItem(
+      title: 'Đối tượng thu/chi',
+      icon: Icons.group,
+      iconColor: Colors.lightBlue,
+    ),
+    GirdItem(
+      title: 'Chuyến đi/Sự kiện',
+      icon: Icons.event,
+      iconColor: Colors.lightGreen,
+    ),
+    GirdItem(
+      title: 'Phân tích tài chính',
+      icon: Icons.pie_chart_outline,
+      iconColor: Colors.purple,
+    ),
   ];
+
+  // const Main_BaoCao({super.key});
+  Main_BaoCao({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +115,7 @@ class Main_BaoCao extends StatelessWidget {
                       color: Colors.black12,
                       blurRadius: 6,
                       offset: Offset(0, 2),
-                    )
+                    ),
                   ],
                 ),
                 child: Column(
@@ -91,7 +126,10 @@ class Main_BaoCao extends StatelessWidget {
                     Text(
                       item.title,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'RegisterScreen.dart';
+import 'package:http/http.dart' as http;
+import 'package:xml/xml.dart' as xml;
+import 'dart:convert';
 
 class LoginScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
+  LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -46,11 +51,12 @@ class LoginScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     // Xử lý đăng nhập
+                    _login(context);
                   },
-                  child: const Text("Đăng nhập"),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
                   ),
+                  child: const Text("Đăng nhập"),
                 ),
                 TextButton(
                   onPressed: () {
@@ -60,12 +66,68 @@ class LoginScreen extends StatelessWidget {
                     );
                   },
                   child: const Text("Chưa có tài khoản? Đăng ký"),
-                )
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  void _login(BuildContext context) async {
+    String username = emailController.text.trim();
+    String password = passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập tên đăng nhập và mật khẩu'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://10.0.2.2:7283/api/TaiKhoan'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> taiKhoans = jsonDecode(response.body);
+
+        bool isAuthenticated = false;
+
+        for (var tk in taiKhoans) {
+          final tendangnhap = tk['tendangnhap']?.trim();
+          final matkhau = tk['matkhau']?.trim();
+
+          if (tendangnhap == username && matkhau == password) {
+            isAuthenticated = true;
+            break;
+          }
+        }
+
+        if (isAuthenticated) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đăng nhập thành công!')),
+          );
+          // TODO: Điều hướng sang màn hình chính ở đây
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Sai tên đăng nhập hoặc mật khẩu')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi server: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi kết nối: $e')));
+    }
   }
 }

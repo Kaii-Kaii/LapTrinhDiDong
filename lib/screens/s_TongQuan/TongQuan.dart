@@ -101,76 +101,84 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text('Cá nhân hoá giao diện tổng quan'),
-          content: Container(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: tempCardVisibility.length,
-              itemBuilder: (context, index) {
-                final cardName = tempCardVisibility.keys.elementAt(index);
-                final isVisible = tempCardVisibility[cardName]!;
-                return Container(
-                  margin: EdgeInsets.symmetric(vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isVisible ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: SwitchListTile(
-                    title: Text(
-                      cardName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: isVisible ? Colors.blue : Colors.grey[600],
-                      ),
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  title: Text('Cá nhân hoá giao diện tổng quan'),
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: tempCardVisibility.length,
+                      itemBuilder: (context, index) {
+                        final cardName = tempCardVisibility.keys.elementAt(
+                          index,
+                        );
+                        final isVisible = tempCardVisibility[cardName]!;
+                        return Container(
+                          margin: EdgeInsets.symmetric(vertical: 4),
+                          decoration: BoxDecoration(
+                            color:
+                                isVisible
+                                    ? Colors.blue.withOpacity(0.1)
+                                    : Colors.grey.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: SwitchListTile(
+                            title: Text(
+                              cardName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    isVisible ? Colors.blue : Colors.grey[600],
+                              ),
+                            ),
+                            value: isVisible,
+                            onChanged: (value) {
+                              setDialogState(() {
+                                tempCardVisibility[cardName] = value;
+                              });
+                            },
+                            activeColor: Colors.blue,
+                            inactiveThumbColor: Colors.grey[400],
+                            inactiveTrackColor: Colors.grey[300],
+                            activeTrackColor: Colors.blue.withOpacity(0.5),
+                          ),
+                        );
+                      },
                     ),
-                    value: isVisible,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        tempCardVisibility[cardName] = value;
-                      });
-                    },
-                    activeColor: Colors.blue,
-                    inactiveThumbColor: Colors.grey[400],
-                    inactiveTrackColor: Colors.grey[300],
-                    activeTrackColor: Colors.blue.withOpacity(0.5),
                   ),
-                );
-              },
-            ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Text('Huỷ'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          cardVisibility = Map.from(tempCardVisibility);
+                        });
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Đã lưu thay đổi'),
+                            backgroundColor: Colors.green,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text('Lưu thay đổi'),
+                    ),
+                  ],
+                ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Huỷ'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  cardVisibility = Map.from(tempCardVisibility);
-                });
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Đã lưu thay đổi'),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Lưu thay đổi'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -201,7 +209,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Chào ${userName}!",
+                        "Chào $userName!",
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -296,7 +304,9 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                         ),
                         IconButton(
                           icon: Icon(
-                            isBalanceVisible ? Icons.visibility : Icons.visibility_off,
+                            isBalanceVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: Colors.blue,
                           ),
                           onPressed: () {
@@ -309,9 +319,9 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      isBalanceVisible 
-                        ? "${(totalIncome - totalExpense).toStringAsFixed(2)} đ"
-                        : "****** đ",
+                      isBalanceVisible
+                          ? "${(totalIncome - totalExpense).toStringAsFixed(2)} đ"
+                          : "****** đ",
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -328,46 +338,38 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
               child: ListView(
                 padding: EdgeInsets.all(16),
                 children: [
-                  if (cardVisibility['Tình hình thu chi']!)
-                    ...[
-                      _buildChartCard("Tình hình thu chi", incomeData),
-                      SizedBox(height: 16),
-                    ],
-                  if (cardVisibility['Hạn mức chi']!)
-                    ...[
-                      _buildChartCard("Hạn mức chi", expenseData),
-                      SizedBox(height: 16),
-                    ],
-                  if (cardVisibility['Du lịch']!)
-                    ...[
-                      _buildTravelCard(),
-                      SizedBox(height: 16),
-                    ],
-                  if (cardVisibility['Tra cứu tỷ giá']!)
-                    ...[
-                      _buildExchangeRateCard(),
-                      SizedBox(height: 16),
-                    ],
-                  if (cardVisibility['Tiện ích khác']!)
-                    ...[
-                      _buildUtilitiesCard(),
-                      SizedBox(height: 16),
-                    ],
-                  if (cardVisibility['Phân tích chi tiêu']!)
-                    ...[
-                      _buildExpenseAnalysisCard(),
-                      SizedBox(height: 16),
-                    ],
-                  if (cardVisibility['Sổ tiết kiệm']!)
-                    ...[
-                      _buildSavingsCard(),
-                      SizedBox(height: 16),
-                    ],
-                  if (cardVisibility['Theo dõi vay nợ']!)
-                    ...[
-                      _buildLoanTrackingCard(),
-                      SizedBox(height: 16),
-                    ],
+                  if (cardVisibility['Tình hình thu chi']!) ...[
+                    _buildChartCard("Tình hình thu chi", incomeData),
+                    SizedBox(height: 16),
+                  ],
+                  if (cardVisibility['Hạn mức chi']!) ...[
+                    _buildChartCard("Hạn mức chi", expenseData),
+                    SizedBox(height: 16),
+                  ],
+                  if (cardVisibility['Du lịch']!) ...[
+                    _buildTravelCard(),
+                    SizedBox(height: 16),
+                  ],
+                  if (cardVisibility['Tra cứu tỷ giá']!) ...[
+                    _buildExchangeRateCard(),
+                    SizedBox(height: 16),
+                  ],
+                  if (cardVisibility['Tiện ích khác']!) ...[
+                    _buildUtilitiesCard(),
+                    SizedBox(height: 16),
+                  ],
+                  if (cardVisibility['Phân tích chi tiêu']!) ...[
+                    _buildExpenseAnalysisCard(),
+                    SizedBox(height: 16),
+                  ],
+                  if (cardVisibility['Sổ tiết kiệm']!) ...[
+                    _buildSavingsCard(),
+                    SizedBox(height: 16),
+                  ],
+                  if (cardVisibility['Theo dõi vay nợ']!) ...[
+                    _buildLoanTrackingCard(),
+                    SizedBox(height: 16),
+                  ],
                 ],
               ),
             ),
@@ -427,9 +429,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => LichSuGhiChep(),
-                      ),
+                      MaterialPageRoute(builder: (context) => LichSuGhiChep()),
                     );
                   },
                   icon: Icon(Icons.history, size: 18),
@@ -457,27 +457,30 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                     value: selectedTimePeriod,
                     isExpanded: true,
                     icon: Icon(Icons.arrow_drop_down, color: Colors.blue),
-                    items: [
-                      "Hôm nay",
-                      "Tuần này",
-                      "Tháng này",
-                      "Quý này",
-                      "Năm nay",
-                    ].map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text(
-                            value,
-                            style: TextStyle(
-                              color: Colors.blue,
-                              fontWeight: FontWeight.bold,
+                    items:
+                        [
+                          "Hôm nay",
+                          "Tuần này",
+                          "Tháng này",
+                          "Quý này",
+                          "Năm nay",
+                        ].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: Text(
+                                value,
+                                style: TextStyle(
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
                     onChanged: (String? newValue) {
                       if (newValue != null) {
                         setState(() {
@@ -494,40 +497,44 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
             Container(
               height: 200,
               alignment: Alignment.center,
-              child: title == "Hạn mức chi"
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Tháng này bạn chưa có ghi chép nào",
-                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                        ),
-                        SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ThemHanMucChi(),
-                              ),
-                            );
-                          },
-                          icon: Icon(Icons.add),
-                          label: Text("Thêm hạn mức chi"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+              child:
+                  title == "Hạn mức chi"
+                      ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Tháng này bạn chưa có ghi chép nào",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
                             ),
                           ),
-                        ),
-                      ],
-                    )
-                  : Text(
-                      "Tháng này bạn chưa có ghi chép nào",
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                    ),
+                          SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ThemHanMucChi(),
+                                ),
+                              );
+                            },
+                            icon: Icon(Icons.add),
+                            label: Text("Thêm hạn mức chi"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                      : Text(
+                        "Tháng này bạn chưa có ghi chép nào",
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
             )
           else
             SizedBox(height: 200, child: PieChart(_generatePieChartData(data))),
@@ -613,19 +620,14 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                 Text(
                   "Hãy tạo chuyến đi để theo dõi cùng sổ thu chi",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
                 SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => ThemChuyenDi(),
-                      ),
+                      MaterialPageRoute(builder: (context) => ThemChuyenDi()),
                     );
                   },
                   icon: Icon(Icons.add),
@@ -679,9 +681,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => TraCuuTyGia(),
-                    ),
+                    MaterialPageRoute(builder: (context) => TraCuuTyGia()),
                   );
                 },
                 icon: Icon(Icons.arrow_forward),
@@ -699,22 +699,16 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                 Text(
                   "Xem tỷ giá và quy đổi tiền tệ",
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
                 SizedBox(height: 8),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => TraCuuTyGia(),
-                      ),
+                      MaterialPageRoute(builder: (context) => TraCuuTyGia()),
                     );
                   },
-                  child: Text("Tra cứu ngay"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
@@ -722,6 +716,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
+                  child: Text("Tra cứu ngay"),
                 ),
               ],
             ),
@@ -763,38 +758,38 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
             children: [
               Text(
                 "Từ tháng",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               DropdownButton<int>(
                 value: 1,
-                items: List.generate(12, (index) => index + 1)
-                    .map((month) => DropdownMenuItem(
-                          value: month,
-                          child: Text("Tháng $month"),
-                        ))
-                    .toList(),
+                items:
+                    List.generate(12, (index) => index + 1)
+                        .map(
+                          (month) => DropdownMenuItem(
+                            value: month,
+                            child: Text("Tháng $month"),
+                          ),
+                        )
+                        .toList(),
                 onChanged: (value) {
                   // TODO: Handle from month change
                 },
               ),
               Text(
                 "đến tháng",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
               ),
               DropdownButton<int>(
                 value: 12,
-                items: List.generate(12, (index) => index + 1)
-                    .map((month) => DropdownMenuItem(
-                          value: month,
-                          child: Text("Tháng $month"),
-                        ))
-                    .toList(),
+                items:
+                    List.generate(12, (index) => index + 1)
+                        .map(
+                          (month) => DropdownMenuItem(
+                            value: month,
+                            child: Text("Tháng $month"),
+                          ),
+                        )
+                        .toList(),
                 onChanged: (value) {
                   // TODO: Handle to month change
                 },
@@ -802,10 +797,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
             ],
           ),
           SizedBox(height: 16),
-          Container(
-            height: 200,
-            child: _buildBarChart(),
-          ),
+          SizedBox(height: 200, child: _buildBarChart()),
         ],
       ),
     );
@@ -819,10 +811,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
       return Center(
         child: Text(
           "Không có dữ liệu",
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
         ),
       );
     }
@@ -854,10 +843,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
               getTitlesWidget: (value, meta) {
                 return Text(
                   'Tháng ${value.toInt()}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 );
               },
             ),
@@ -870,10 +856,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
               getTitlesWidget: (value, meta) {
                 return Text(
                   '${value.toInt()}',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 );
               },
             ),
@@ -885,10 +868,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
           drawVerticalLine: false,
           horizontalInterval: 5, // Grid lines every 5 units
           getDrawingHorizontalLine: (value) {
-            return FlLine(
-              color: Colors.grey.withOpacity(0.2),
-              strokeWidth: 1,
-            );
+            return FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 1);
           },
         ),
         barGroups: List.generate(
@@ -979,10 +959,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                       Text(
                         utilities[index]['label'],
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue,
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.blue),
                       ),
                     ],
                   ),
@@ -1027,10 +1004,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
             alignment: Alignment.center,
             child: Text(
               "Hiện tại, bạn chưa có sổ tiết kiệm nào",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
           ),
         ],
@@ -1070,10 +1044,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
             alignment: Alignment.center,
             child: Text(
               "Hiện tại bạn không có khoản cho vay và còn nợ nào",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
           ),
         ],
