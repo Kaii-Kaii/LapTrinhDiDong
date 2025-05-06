@@ -7,7 +7,8 @@ import 'package:qltncn/screens/s_TaiKhoan/TaiKhoanMain.dart';
 import 'package:qltncn/screens/s_TongQuan/TongQuan.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final String maKH;
+  const HomePage({super.key, required this.maKH});
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -15,15 +16,16 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  static final List<Widget> _widgetOptions = <Widget>[
-   // OverviewScreen(), // Gọi màn hình Tổng quan
-    TongQuanScreen(),
-    TaikhoanMain(),
-    NhapVaoScreen(),
-    // LichScreen(),
-    Main_BaoCao(),
-    KhacMain(),
-  ];
+  // Khởi tạo _widgetOptions trong phương thức build
+  List<Widget> get _widgetOptions {
+    return <Widget>[
+      TongQuanScreen(),
+      TaikhoanMain(),
+      NhapVaoScreen(),
+      Main_BaoCao(),
+      KhacMain(maKH: widget.maKH),  // Sử dụng widget.maKH
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {

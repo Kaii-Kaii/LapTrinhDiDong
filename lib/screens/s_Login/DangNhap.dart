@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:qltncn/screens/HomePage.dart';
 import 'RegisterScreen.dart';
 import 'package:http/http.dart' as http;
-import 'package:xml/xml.dart' as xml;
 import 'dart:convert';
+import 'package:qltncn/model/KhachHang/khachhang_service.dart'; 
+import 'package:qltncn/model/KhachHang/Khach_Hang.dart';
+
+
 
 class LoginScreen extends StatelessWidget {
   final TextEditingController emailController = TextEditingController();
@@ -50,7 +54,6 @@ class LoginScreen extends StatelessWidget {
                 const SizedBox(height: 30),
                 ElevatedButton(
                   onPressed: () {
-                    // Xử lý đăng nhập
                     _login(context);
                   },
                   style: ElevatedButton.styleFrom(
@@ -81,9 +84,7 @@ class LoginScreen extends StatelessWidget {
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng nhập tên đăng nhập và mật khẩu'),
-        ),
+        const SnackBar(content: Text('Vui lòng nhập tên đăng nhập và mật khẩu')),
       );
       return;
     }
@@ -97,23 +98,40 @@ class LoginScreen extends StatelessWidget {
       if (response.statusCode == 200) {
         final List<dynamic> taiKhoans = jsonDecode(response.body);
 
-        bool isAuthenticated = false;
+        String? maTaiKhoan;
 
         for (var tk in taiKhoans) {
           final tendangnhap = tk['tendangnhap']?.trim();
           final matkhau = tk['matkhau']?.trim();
 
           if (tendangnhap == username && matkhau == password) {
-            isAuthenticated = true;
+            maTaiKhoan = tk['mataikhoan']?.trim();
             break;
           }
         }
 
-        if (isAuthenticated) {
+        if (maTaiKhoan != null) {
+          // Gọi service lấy danh sách khách hàng
+          List<KhachHang> danhSachKH = List<KhachHang>.from(await KhachHangService.fetchKhachHangs());
+          // Tìm khách hàng khớp với mã tài khoản
+          final khachHang = danhSachKH.firstWhere(
+            (kh) => kh.maTaiKhoan == maTaiKhoan,
+            orElse: () => throw Exception('Không tìm thấy khách hàng'),
+          );
+
+          String maKH = khachHang.maKH;
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Đăng nhập thành công!')),
           );
-          // TODO: Điều hướng sang màn hình chính ở đây
+
+          // Chuyển sang HomePage và truyền maKH
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HomePage(maKH: maKH),
+            ),
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Sai tên đăng nhập hoặc mật khẩu')),
@@ -125,9 +143,9 @@ class LoginScreen extends StatelessWidget {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi kết nối: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi kết nối: $e')),
+      );
     }
   }
 }
