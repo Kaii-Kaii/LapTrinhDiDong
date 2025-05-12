@@ -6,38 +6,26 @@ class KhachHangService {
   static Future<KhachHang?> fetchKhachHangByMaKH(String maKH) async {
     try {
       final response = await http.get(
-        Uri.parse('https://your-api-url/khachhang/$maKH'),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return KhachHang.fromJson(data); // assuming you have a `fromJson` method in KhachHang
-      } else {
-        throw Exception('Failed to load KhachHang data');
-      }
-    } catch (e) {
-      print('Error fetching customer: $e');
-      return null;
-    }
-  }
-
-  static Future<List<KhachHang>> fetchKhachHangs() async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://your-api-url/khachhangs'),
+        Uri.parse('http://10.0.2.2:5203/api/KhachHang'), // Lấy danh sách tất cả khách hàng
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.map((item) => KhachHang.fromJson(item)).toList();
+        // Tìm khách hàng theo maKH trong danh sách
+        final customer = data
+            .map((item) => KhachHang.fromJson(item))
+            .firstWhere(
+              (khachHang) => khachHang.maKH == maKH,
+              orElse: () => KhachHang(maKH: '', maTaiKhoan: '', xu: 0), // Trả về đối tượng trống nếu không tìm thấy
+            );
+        return customer;
       } else {
-        throw Exception('Failed to load KhachHang data');
+        throw Exception('Failed to load customer list');
       }
     } catch (e) {
-      print('Error fetching customer list: $e');
-      return [];
+      print('Error fetching customer by maKH: $e');
+      return null;
     }
   }
 }

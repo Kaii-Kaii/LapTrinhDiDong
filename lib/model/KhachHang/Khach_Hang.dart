@@ -7,7 +7,7 @@ class KhachHang {
   final int xu;
   final String? avatar;
 
-  KhachHang({
+  const KhachHang({
     required this.maKH,
     required this.maTaiKhoan,
     this.hoTen,
@@ -19,15 +19,15 @@ class KhachHang {
 
   factory KhachHang.fromJson(Map<String, dynamic> json) {
     return KhachHang(
-      maKH: json['makh']?.trim() ?? '',
-      maTaiKhoan: json['mataikhoan']?.trim() ?? '',
-      hoTen: json['hoten'],
+      maKH: (json['makh'] as String?)?.trim() ?? '',
+      maTaiKhoan: (json['mataikhoan'] as String?)?.trim() ?? '',
+      hoTen: json['hoten'] as String?,
       ngaySinh: json['ngaysinh'] != null
-          ? DateTime.tryParse(json['ngaysinh'])
+          ? DateTime.tryParse(json['ngaysinh'].toString())
           : null,
-      soDT: json['sodt']?.trim(),
-      xu: json['xu'] ?? 0,
-      avatar: json['avatar'],
+      soDT: (json['sodt'] as String?)?.trim(),
+      xu: json['xu'] is int ? json['xu'] : int.tryParse(json['xu'].toString()) ?? 0,
+      avatar: json['avatar'] as String?,
     );
   }
 
