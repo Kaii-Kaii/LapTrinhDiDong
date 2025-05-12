@@ -3,16 +3,17 @@ import 'package:qltncn/screens/HomePage.dart';
 import 'RegisterScreen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:qltncn/model/KhachHang/khachhang_service.dart'; 
-import 'package:qltncn/model/KhachHang/Khach_Hang.dart';
 
+class LoginScreen extends StatefulWidget {
+  LoginScreen({super.key});
 
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
 
-class LoginScreen extends StatelessWidget {
+class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-
-  LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +55,7 @@ class LoginScreen extends StatelessWidget {
                 const SizedBox(height: 30),
                 ElevatedButton(
                   onPressed: () {
+                    // Xử lý đăng nhập
                     _login(context);
                   },
                   style: ElevatedButton.styleFrom(
@@ -84,52 +86,46 @@ class LoginScreen extends StatelessWidget {
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập tên đăng nhập và mật khẩu')),
+        const SnackBar(
+          content: Text('Vui lòng nhập tên đăng nhập và mật khẩu'),
+        ),
       );
       return;
     }
 
     try {
       final response = await http.get(
-        Uri.parse('https://10.0.2.2:7283/api/TaiKhoan'),
+        Uri.parse('http://10.0.2.2:5203/api/TaiKhoan'),
         headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> taiKhoans = jsonDecode(response.body);
 
-        String? maTaiKhoan;
+        bool isAuthenticated = false;
+        String maKH = "";  // Biến để lưu mã khách hàng
 
         for (var tk in taiKhoans) {
           final tendangnhap = tk['tendangnhap']?.trim();
           final matkhau = tk['matkhau']?.trim();
 
+          // Kiểm tra đăng nhập hợp lệ
           if (tendangnhap == username && matkhau == password) {
-            maTaiKhoan = tk['mataikhoan']?.trim();
+            isAuthenticated = true;
+            maKH = tk['mataikhoan'];  // Lưu maKH từ dữ liệu trả về
             break;
           }
         }
 
-        if (maTaiKhoan != null) {
-          // Gọi service lấy danh sách khách hàng
-          List<KhachHang> danhSachKH = List<KhachHang>.from(await KhachHangService.fetchKhachHangs());
-          // Tìm khách hàng khớp với mã tài khoản
-          final khachHang = danhSachKH.firstWhere(
-            (kh) => kh.maTaiKhoan == maTaiKhoan,
-            orElse: () => throw Exception('Không tìm thấy khách hàng'),
-          );
-
-          String maKH = khachHang.maKH;
-
+        if (isAuthenticated) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Đăng nhập thành công!')),
           );
-
-          // Chuyển sang HomePage và truyền maKH
+          // Chuyển đến trang chủ và truyền maKH
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => HomePage(maKH: maKH),
+              builder: (_) => HomePage(maKH: maKH), // Truyền maKH vào HomePage
             ),
           );
         } else {
