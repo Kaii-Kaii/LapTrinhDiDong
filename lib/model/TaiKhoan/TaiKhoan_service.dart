@@ -5,7 +5,7 @@ import 'package:qltncn/model/TaiKhoan/TaiKhoan.dart';
 Future<TaiKhoan?> fetchTaiKhoan(String maKH) async {
   try {
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:5203/api/TaiKhoan'),
+      Uri.parse('https://10.0.2.2:7283/api/TaiKhoan'),
       headers: {'Content-Type': 'application/json'},
     );
 

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:qltncn/model/TaiKhoan/TaiKhoan_service.dart';
 import 'package:qltncn/screens/HomePage.dart';
 import 'RegisterScreen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:qltncn/model/KhachHang/khachhang_service.dart';
 
 class LoginScreen extends StatefulWidget {
   LoginScreen({super.key});
@@ -83,19 +85,18 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login(BuildContext context) async {
     String username = emailController.text.trim();
     String password = passwordController.text.trim();
+    String matk = '';
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng nhập tên đăng nhập và mật khẩu'),
-        ),
+        const SnackBar(content: Text('Vui lòng nhập tên đăng nhập và mật khẩu')),
       );
       return;
     }
 
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5203/api/TaiKhoan'),
+        Uri.parse('https://10.0.2.2:7283/api/TaiKhoan'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -103,30 +104,34 @@ class _LoginScreenState extends State<LoginScreen> {
         final List<dynamic> taiKhoans = jsonDecode(response.body);
 
         bool isAuthenticated = false;
-        String maKH = "";  // Biến để lưu mã khách hàng
 
         for (var tk in taiKhoans) {
           final tendangnhap = tk['tendangnhap']?.trim();
           final matkhau = tk['matkhau']?.trim();
 
-          // Kiểm tra đăng nhập hợp lệ
           if (tendangnhap == username && matkhau == password) {
             isAuthenticated = true;
-            maKH = tk['mataikhoan'];  // Lưu maKH từ dữ liệu trả về
+            matk = tk['mataikhoan']?.trim() ?? '';
             break;
           }
         }
 
         if (isAuthenticated) {
+          final maKH = await KhachHangService.fetchMaKHByMaTaiKhoan(matk);
+          if (maKH == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Không tìm thấy khách hàng tương ứng')),
+            );
+            return;
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Đăng nhập thành công!')),
           );
-          // Chuyển đến trang chủ và truyền maKH
+
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => HomePage(maKH: maKH), // Truyền maKH vào HomePage
-            ),
+            MaterialPageRoute(builder: (_) => HomePage(maKH: maKH)),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

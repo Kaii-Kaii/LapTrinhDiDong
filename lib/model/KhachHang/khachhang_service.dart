@@ -28,4 +28,30 @@ class KhachHangService {
       return null;
     }
   }
+  static Future<String?> fetchMaKHByMaTaiKhoan(String maTaiKhoan) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://10.0.2.2:7283/api/KhachHang'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+
+        for (var item in data) {
+          if (item['mataikhoan']?.trim() == maTaiKhoan.trim()) {
+            return item['makh']?.trim();
+          }
+        }
+      } else {
+        print('Lỗi khi tải danh sách KhachHang: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Lỗi fetchMaKHByMaTaiKhoan: $e');
+    }
+
+    return null;
+  }
+
+
 }
