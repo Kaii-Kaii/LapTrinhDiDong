@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:qltncn/model/TaiKhoan/TaiKhoan_service.dart';
+import 'package:qltncn/screens/HomePage.dart';
 import 'RegisterScreen.dart';
 import 'package:http/http.dart' as http;
-import 'package:xml/xml.dart' as xml;
 import 'dart:convert';
+import 'package:qltncn/model/KhachHang/khachhang_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  LoginScreen({super.key});
+
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-
-  LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -78,12 +85,11 @@ class LoginScreen extends StatelessWidget {
   void _login(BuildContext context) async {
     String username = emailController.text.trim();
     String password = passwordController.text.trim();
+    String matk = '';
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng nhập tên đăng nhập và mật khẩu'),
-        ),
+        const SnackBar(content: Text('Vui lòng nhập tên đăng nhập và mật khẩu')),
       );
       return;
     }
@@ -105,15 +111,28 @@ class LoginScreen extends StatelessWidget {
 
           if (tendangnhap == username && matkhau == password) {
             isAuthenticated = true;
+            matk = tk['mataikhoan']?.trim() ?? '';
             break;
           }
         }
 
         if (isAuthenticated) {
+          final maKH = await KhachHangService.fetchMaKHByMaTaiKhoan(matk);
+          if (maKH == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Không tìm thấy khách hàng tương ứng')),
+            );
+            return;
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Đăng nhập thành công!')),
           );
-          // TODO: Điều hướng sang màn hình chính ở đây
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => HomePage(maKH: maKH)),
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Sai tên đăng nhập hoặc mật khẩu')),
@@ -125,9 +144,9 @@ class LoginScreen extends StatelessWidget {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi kết nối: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi kết nối: $e')),
+      );
     }
   }
 }

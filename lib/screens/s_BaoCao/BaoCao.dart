@@ -78,10 +78,10 @@ class Main_BaoCao extends StatelessWidget {
                 switch (index) {
                   case 0:
                     // TODO: Mở Widget Tài chính hiện tại
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomePage()),
-                    );
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(builder: (context) => HomePage()),
+                    // );
                     break;
                   case 1:
                     // TODO: Mở Widget Tình hình thu chi
