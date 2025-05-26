@@ -27,34 +27,47 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
   int nguoiPhuThuoc = 0;
 
   double trichNopBH = 0;
-  final double giamTruBanThan = 11_000_000;
+  final double giamTruBanThan = 11000000 * 12;
   double giamTruNguoiPhuThuoc = 0;
   double thuNhapTinhThue = 0;
   double thuePhaiDong = 0;
   double thuNhapSauThue = 0;
 
-  void _tinhToan() {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        thuNhap = _parseCurrency(_thuNhapController.text);
-        luongDongBH = _parseCurrency(_luongDongBHController.text);
-        nguoiPhuThuoc = int.parse(_nguoiPhuThuocController.text);
-
-        trichNopBH = luongDongBH * 0.105;
-        giamTruNguoiPhuThuoc = nguoiPhuThuoc * 4_400_000;
-        double tongGiamTru = trichNopBH + giamTruBanThan + giamTruNguoiPhuThuoc;
-        thuNhapTinhThue = max(0, thuNhap - tongGiamTru);
-        thuePhaiDong = _tinhThueTNCN(thuNhapTinhThue);
-        thuNhapSauThue = thuNhap - trichNopBH - thuePhaiDong;
-      });
-    }
-  }
-
+  // Hàm parse tiền tệ: chỉ giữ số rồi parse
   double _parseCurrency(String formatted) {
-    // Bỏ dấu chấm để chuyển về số nguyên rồi trả về double
-    return double.tryParse(formatted.replaceAll('.', '').trim()) ?? 0;
+    String onlyDigits = formatted.replaceAll(RegExp(r'[^0-9]'), '');
+    if (onlyDigits.isEmpty) return 0;
+    return double.parse(onlyDigits);
   }
 
+  // Hàm format tiền tệ dùng chung, tránh vòng lặp định dạng
+  void _formatCurrency(
+    TextEditingController controller,
+    String value,
+    bool isFormattingFlag,
+    void Function(bool) setFlag,
+  ) {
+    if (isFormattingFlag) return;
+
+    String onlyDigits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (onlyDigits.isEmpty) {
+      controller.text = '';
+      controller.selection = TextSelection.fromPosition(
+        TextPosition(offset: 0),
+      );
+      return;
+    }
+
+    setFlag(true);
+    String newText = _currencyFormatter.format(int.parse(onlyDigits));
+    controller.text = newText;
+    controller.selection = TextSelection.fromPosition(
+      TextPosition(offset: newText.length),
+    );
+    setFlag(false);
+  }
+
+  // Hàm tính thuế TNCN theo bậc thuế
   double _tinhThueTNCN(double thuNhapTinhThue) {
     double thue = 0;
     final bac = [
@@ -83,38 +96,29 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
     return thue;
   }
 
+  void _tinhToan() {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        thuNhap = _parseCurrency(_thuNhapController.text);
+        luongDongBH = _parseCurrency(_luongDongBHController.text);
+        nguoiPhuThuoc = int.parse(_nguoiPhuThuocController.text);
+
+        trichNopBH = luongDongBH * 0.105;
+        giamTruNguoiPhuThuoc = nguoiPhuThuoc * (4400000 * 12);
+        double tongGiamTru = trichNopBH + giamTruBanThan + giamTruNguoiPhuThuoc;
+        thuNhapTinhThue = max(0, thuNhap - tongGiamTru);
+        thuePhaiDong = _tinhThueTNCN(thuNhapTinhThue);
+        thuNhapSauThue = thuNhap - trichNopBH - thuePhaiDong;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _thuNhapController.dispose();
     _luongDongBHController.dispose();
     _nguoiPhuThuocController.dispose();
     super.dispose();
-  }
-
-  // Hàm định dạng tiền tệ khi nhập vào (thêm dấu chấm hàng nghìn)
-  void _formatCurrency(
-    TextEditingController controller,
-    String value,
-    bool isFormattingFlag,
-  ) {
-    if (isFormattingFlag) return; // tránh loop vô hạn
-
-    String onlyDigits = value.replaceAll(RegExp(r'[^0-9]'), '');
-    if (onlyDigits.isEmpty) {
-      controller.text = '';
-      controller.selection = TextSelection.fromPosition(
-        TextPosition(offset: 0),
-      );
-      return;
-    }
-
-    _isFormattingThuNhap = true;
-    String newText = _currencyFormatter.format(int.parse(onlyDigits));
-    controller.text = newText;
-    controller.selection = TextSelection.fromPosition(
-      TextPosition(offset: newText.length),
-    );
-    _isFormattingThuNhap = false;
   }
 
   @override
@@ -128,7 +132,7 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
         backgroundColor: Colors.blue,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
       ),
@@ -153,25 +157,12 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
                         hint: 'Nhập tổng thu nhập',
                         icon: Icons.attach_money,
                         onChanged: (val) {
-                          if (_isFormattingThuNhap) return;
-                          String onlyDigits = val.replaceAll(
-                            RegExp(r'[^0-9]'),
-                            '',
+                          _formatCurrency(
+                            _thuNhapController,
+                            val,
+                            _isFormattingThuNhap,
+                            (flag) => _isFormattingThuNhap = flag,
                           );
-                          if (onlyDigits.isEmpty) {
-                            _thuNhapController.text = '';
-                            _thuNhapController
-                                .selection = TextSelection.collapsed(offset: 0);
-                            return;
-                          }
-                          _isFormattingThuNhap = true;
-                          String newText = _currencyFormatter.format(
-                            int.parse(onlyDigits),
-                          );
-                          _thuNhapController.text = newText;
-                          _thuNhapController.selection =
-                              TextSelection.collapsed(offset: newText.length);
-                          _isFormattingThuNhap = false;
                         },
                       ),
                       const SizedBox(height: 16),
@@ -181,25 +172,12 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
                         hint: 'Nhập lương đóng bảo hiểm',
                         icon: Icons.account_balance_wallet,
                         onChanged: (val) {
-                          if (_isFormattingLuongBH) return;
-                          String onlyDigits = val.replaceAll(
-                            RegExp(r'[^0-9]'),
-                            '',
+                          _formatCurrency(
+                            _luongDongBHController,
+                            val,
+                            _isFormattingLuongBH,
+                            (flag) => _isFormattingLuongBH = flag,
                           );
-                          if (onlyDigits.isEmpty) {
-                            _luongDongBHController.text = '';
-                            _luongDongBHController
-                                .selection = TextSelection.collapsed(offset: 0);
-                            return;
-                          }
-                          _isFormattingLuongBH = true;
-                          String newText = _currencyFormatter.format(
-                            int.parse(onlyDigits),
-                          );
-                          _luongDongBHController.text = newText;
-                          _luongDongBHController.selection =
-                              TextSelection.collapsed(offset: newText.length);
-                          _isFormattingLuongBH = false;
                         },
                       ),
                       const SizedBox(height: 16),
@@ -280,7 +258,7 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
                       _buildResultRow("Lương đóng BH", luongDongBH),
                       _buildResultRow("Trích nộp BH (10.5%)", trichNopBH),
                       const Divider(),
-                      _buildResultRow("Giảm trừ bản thân", giamTruBanThan),
+                      _buildResultRow("Giảm trừ bản thân", 132000000),
                       _buildResultRow(
                         "Giảm trừ người phụ thuộc",
                         giamTruNguoiPhuThuoc,
