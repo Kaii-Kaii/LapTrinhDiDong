@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:qltncn/model/TaiKhoan/TaiKhoan_service.dart';
 import 'package:qltncn/screens/HomePage.dart';
 import 'RegisterScreen.dart';
 import 'package:http/http.dart' as http;
@@ -7,7 +6,7 @@ import 'dart:convert';
 import 'package:qltncn/model/KhachHang/khachhang_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  LoginScreen({super.key});
+  const LoginScreen({super.key});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();

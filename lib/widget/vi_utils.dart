@@ -77,7 +77,7 @@ Widget chonLoaiViBottomSheet({
           trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
           onTap: () => onChon(vi.ten),
         );
-      }).toList(),
+      }),
       const SizedBox(height: 16),
     ],
   );

@@ -8,7 +8,7 @@ import 'tabs/TabTichLuy.dart';
 
 class TaikhoanMain extends StatefulWidget {
   final String maKH;
-  TaikhoanMain({super.key, required this.maKH});
+  const TaikhoanMain({super.key, required this.maKH});
 
   @override
   State<TaikhoanMain> createState() => _TaikhoanMainState();

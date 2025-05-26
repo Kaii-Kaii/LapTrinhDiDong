@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:qltncn/database/database_helper.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math';
 import 'LichSuGhiChep.dart';
