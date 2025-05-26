@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class TabSoTietKiem extends StatelessWidget {
-  const TabSoTietKiem({super.key});
+  final String maKH;
+  const TabSoTietKiem({super.key,required this.maKH});
 
   @override
   Widget build(BuildContext context) {

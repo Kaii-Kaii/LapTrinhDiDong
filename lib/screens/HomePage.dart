@@ -20,7 +20,7 @@ class _HomePageState extends State<HomePage> {
   List<Widget> get _widgetOptions {
     return <Widget>[
       TongQuanScreen(),
-      TaikhoanMain(),
+      TaikhoanMain(maKH: widget.maKH),
       NhapVaoScreen(),
       Main_BaoCao(),
       KhacMain(maKH: widget.maKH),  // Sử dụng widget.maKH

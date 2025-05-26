@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class TabTichLuy extends StatelessWidget {
-  const TabTichLuy({super.key});
+  final String maKH;
+  const TabTichLuy({super.key,required this.maKH});
 
   @override
   Widget build(BuildContext context) {
