@@ -6,6 +6,7 @@ import 'package:qltncn/model/TaiKhoan/TaiKhoan.dart';
 import 'package:qltncn/model/TaiKhoan/TaiKhoan_service.dart';
 import 'package:qltncn/model/KhachHang/khachhang_service.dart';
 import 'package:qltncn/screens/s_Khac/TienIch/TyGiaScreen.dart';
+import 'package:qltncn/screens/s_Khac/TienIch/TinhThueThuNhapCaNhanScreen.dart';
 
 class KhacMain extends StatelessWidget {
   final String maKH;
@@ -384,6 +385,12 @@ class KhacMain extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const TraCuuTyGiaScreen()),
+        );
+        break;
+      case 'Thuế TNCN':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TinhThueScreen()),
         );
         break;
       default:
