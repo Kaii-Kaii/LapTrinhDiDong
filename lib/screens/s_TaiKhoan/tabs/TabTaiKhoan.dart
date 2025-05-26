@@ -23,22 +23,7 @@ class _TabTaiKhoanState extends State<TabTaiKhoan> {
     _loadDanhSachVi();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Load lại khi quay lại tab này
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (ModalRoute.of(context)?.isCurrent ?? false) {
-        _loadDanhSachVi();
-      }
-    });
-  }
-
   Future<void> _loadDanhSachVi() async {
-    setState(() {
-      isLoading = true;
-    });
-
     final data = await ViNguoiDungService.fetchViNguoiDungByMaKhachHang(widget.maKH);
     setState(() {
       danhSachVi = data;

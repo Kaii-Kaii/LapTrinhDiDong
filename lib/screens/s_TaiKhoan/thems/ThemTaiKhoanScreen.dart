@@ -1,5 +1,3 @@
-// File: ThemTaiKhoanScreen.dart
-
 import 'package:flutter/material.dart';
 import 'package:qltncn/model/LoaiTien/LoaiTien.dart';
 import 'package:qltncn/model/Vi/Vi/ViModel.dart';
@@ -143,22 +141,6 @@ class _ThemTaiKhoanScreenState extends State<ThemTaiKhoanScreen> {
                       prefixIcon: Icon(Icons.notes),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Không tính vào báo cáo'),
-                      Switch(
-                        value: khongTinhBaoCao,
-                        onChanged: (value) => setState(() => khongTinhBaoCao = value),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Ghi chép trên tài khoản này sẽ không được thống kê vào TẤT CẢ các báo cáo (trừ báo cáo theo dõi vay nợ)',
-                    style: TextStyle(color: Colors.grey),
-                  ),
                   Expanded(child: Container()),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
@@ -179,50 +161,45 @@ class _ThemTaiKhoanScreenState extends State<ThemTaiKhoanScreen> {
   }
 
   Future<void> _onSavePressed() async {
-    final tenTaiKhoan = tenTaiKhoanController.text.trim();
-    final dienGiai = dienGiaiController.text.trim();
-    final soDuStr = soDuController.text.trim();
+  final tenTaiKhoan = tenTaiKhoanController.text.trim();
+  final dienGiai = dienGiaiController.text.trim();
+  final soDuStr = soDuController.text.trim();
 
-    if (tenTaiKhoan.isEmpty || soDuStr.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin')),
-      );
-      return;
-    }
+  if (tenTaiKhoan.isEmpty || soDuStr.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Vui lòng nhập đầy đủ thông tin')),
+    );
+    return;
+  }
 
-    final danhSachViNguoiDung = await ViNguoiDungService.fetchViNguoiDungByMaKhachHang(widget.maKH);
+  final danhSachViNguoiDung = await ViNguoiDungService.fetchViNguoiDungByMaKhachHang(widget.maKH);
 
-    final trungVi = danhSachViNguoiDung.any((vi) =>
-        vi.tenTaiKhoan.trim().toLowerCase() == tenTaiKhoan.toLowerCase() &&
-        vi.maVi == maViChon);
+  final trungVi = danhSachViNguoiDung.any((vi) =>
+    vi.tenTaiKhoan.trim().toLowerCase() == tenTaiKhoan.toLowerCase() &&
+    vi.maVi == maViChon &&
+    vi.maLoaiTien == (int.tryParse(loaiTien.maLoai.toString()) ?? 0)
+  );
 
-    if (trungVi) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã tồn tại tài khoản với tên và loại ví này')),
-      );
-      return;
-    }
+  if (trungVi) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Đã tồn tại tài khoản với tên, loại ví và loại tiền này')),
+    );
+    return;
+  }
 
-    final soDu = double.tryParse(soDuStr.replaceAll(',', '')) ?? 0;
+  final soDu = double.tryParse(soDuStr.replaceAll(',', '')) ?? 0;
 
     final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Xác nhận'),
-          content: const Text('Bạn có chắc chắn muốn thêm tài khoản này?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Huỷ'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Xác nhận'),
-            ),
-          ],
-        ),
-      );
-
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận dữ liệu'),
+        content: const Text('Bạn có chắc chắn muốn thêm tài khoản này?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Huỷ')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Xác nhận')),
+        ],
+      ),
+    );
 
     if (confirmed != true) return;
 
@@ -249,4 +226,5 @@ class _ThemTaiKhoanScreenState extends State<ThemTaiKhoanScreen> {
       );
     }
   }
+
 }
