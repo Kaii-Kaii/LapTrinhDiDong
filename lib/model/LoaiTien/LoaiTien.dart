@@ -36,3 +36,10 @@ final List<LoaiTien> danhSachLoaiTien = [
   LoaiTien(maLoai: 21, tenLoai: 'Saudi Riyal', menhGia: 'SAR', kyHieu: '~~'),
   LoaiTien(maLoai: 22, tenLoai: 'United Arab Emirates Dirham', menhGia: 'AED', kyHieu: '!~'),
 ];
+LoaiTien? getLoaiTienByMa(int maLoaiTien) {
+  try {
+    return danhSachLoaiTien.firstWhere((lt) => lt.maLoai == maLoaiTien);
+  } catch (e) {
+    return null; // hoặc trả về 1 LoaiTien mặc định
+  }
+}

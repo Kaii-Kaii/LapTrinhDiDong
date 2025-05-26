@@ -172,7 +172,7 @@ class KhacMain extends StatelessWidget {
       }
 
       final khachHang = snapshot.data!; // Lấy dữ liệu khách hàng
-      String xuText = (khachHang.xu != null && khachHang.xu > 0)
+      String xuText = (khachHang.xu > 0)
           ? "${khachHang.xu} xu" // Nếu có xu và số xu > 0
           : "Chưa có xu"; // Nếu không có xu hoặc xu = 0
 

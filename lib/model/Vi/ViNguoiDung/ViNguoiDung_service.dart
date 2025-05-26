@@ -1,3 +1,5 @@
+// File: ViNguoiDung_service.dart
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'ViNguoiDung.dart';
@@ -17,9 +19,7 @@ class ViNguoiDungService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-
         for (var item in data) {
-          // Kiểm tra mã người dùng có khớp với maKhachHang truyền vào không
           if (item['maNguoiDung']?.toString().trim() == maKhachHang.trim()) {
             danhSachVi.add(ViNguoiDung.fromJson(item));
           }
@@ -37,18 +37,19 @@ class ViNguoiDungService {
   /// Thêm Ví người dùng mới, trả về true nếu thành công
   static Future<bool> themViNguoiDung(ViNguoiDung viNguoiDung) async {
     try {
+      final body = jsonEncode(viNguoiDung.toJson());
+      print('Dữ liệu gửi lên: $body');
+
       final response = await http.post(
         Uri.parse(baseUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(viNguoiDung.toJson()),
+        body: body,
       );
 
-      if (response.statusCode == 201) {
-        return true;
-      } else {
-        print('Lỗi khi thêm Ví người dùng: ${response.statusCode} - ${response.body}');
-        return false;
-      }
+      print('Mã phản hồi: ${response.statusCode}');
+      print('Nội dung trả về: ${response.body}');
+
+      return response.statusCode == 201;
     } catch (e) {
       print('Lỗi themViNguoiDung: $e');
       return false;

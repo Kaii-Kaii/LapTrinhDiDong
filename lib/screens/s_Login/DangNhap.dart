@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'package:qltncn/model/KhachHang/khachhang_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  LoginScreen({super.key});
+  const LoginScreen({super.key});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
