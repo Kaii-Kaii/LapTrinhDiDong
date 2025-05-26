@@ -94,7 +94,26 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
                                         .map(
                                           (e) => DropdownMenuItem(
                                             value: e.currency,
-                                            child: Text(e.currency),
+                                            child: Row(
+                                              children: [
+                                                Image.network(
+                                                  e.flagUrl,
+                                                  width: 32,
+                                                  height: 24,
+                                                  errorBuilder: (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) {
+                                                    return const Icon(
+                                                      Icons.flag_outlined,
+                                                    );
+                                                  },
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(e.currency),
+                                              ],
+                                            ),
                                           ),
                                         )
                                         .toList(),
@@ -120,7 +139,26 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
                                         .map(
                                           (e) => DropdownMenuItem(
                                             value: e.currency,
-                                            child: Text(e.currency),
+                                            child: Row(
+                                              children: [
+                                                Image.network(
+                                                  e.flagUrl,
+                                                  width: 32,
+                                                  height: 24,
+                                                  errorBuilder: (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) {
+                                                    return const Icon(
+                                                      Icons.flag_outlined,
+                                                    );
+                                                  },
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(e.currency),
+                                              ],
+                                            ),
                                           ),
                                         )
                                         .toList(),
@@ -152,9 +190,10 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
                             border: const OutlineInputBorder(),
                           ),
                           controller: TextEditingController(
-                            text: ketQua != null && toCurrency != null
-                                ? '${ketQua!.toStringAsFixed(2)} $toCurrency'
-                                : '',
+                            text:
+                                ketQua != null && toCurrency != null
+                                    ? '${ketQua!.toStringAsFixed(2)} $toCurrency'
+                                    : '',
                           ),
                         ),
                       ],
@@ -174,6 +213,14 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
                     final item = list[index];
                     return Card(
                       child: ListTile(
+                        leading: Image.network(
+                          item.flagUrl,
+                          width: 40,
+                          height: 30,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.flag_outlined);
+                          },
+                        ),
                         title: Text(item.currency),
                         trailing: Text(item.rate.toStringAsFixed(2)),
                       ),

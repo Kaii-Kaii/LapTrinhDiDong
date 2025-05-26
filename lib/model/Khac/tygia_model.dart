@@ -2,13 +2,30 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class TyGiaModel {
-  final String currency; // Mã tiền tệ, ví dụ: 'USD', 'VND', 'EUR'
-  final double rate; //
+  final String currency;
+  final double rate;
+  final String flagUrl;
 
-  TyGiaModel({required this.currency, required this.rate});
+  TyGiaModel({
+    required this.currency,
+    required this.rate,
+    required this.flagUrl,
+  });
+
+  static const Map<String, String> currencyToCountryCode = {
+    'USD': 'us',
+    'VND': 'vn',
+    // ... các mã khác
+  };
 
   factory TyGiaModel.fromMap(String currency, dynamic rate) {
-    return TyGiaModel(currency: currency, rate: (rate as num).toDouble());
+    String countryCode = currencyToCountryCode[currency.toUpperCase()] ?? 'un';
+    String flagUrl = 'https://flagcdn.com/48x36/$countryCode.png';
+    return TyGiaModel(
+      currency: currency,
+      rate: (rate as num).toDouble(),
+      flagUrl: flagUrl,
+    );
   }
 }
 
@@ -54,26 +71,22 @@ class TyGiaRepository {
   }
 }
 
-/// Đổi tiền từ [fromCurrency] sang [toCurrency] với số tiền [amount].
-/// [tyGiaList] là danh sách tỷ giá lấy từ API.
-/// Trả về số tiền đã quy đổi, hoặc null nếu không tìm thấy tỷ giá.
 double? doiTyGia({
   required List<TyGiaModel> tyGiaList,
-  required String fromCurrency, // Mã tiền tệ gốc
-  required String toCurrency, // Mã tiền tệ đích
-  required double amount, // Số tiền cần đổi
+  required String fromCurrency,
+  required String toCurrency,
+  required double amount,
 }) {
   final from = tyGiaList.firstWhere(
-    // Tìm tỷ giá của tiền tệ gốc
     (e) => e.currency == fromCurrency,
-    orElse: () => TyGiaModel(currency: '', rate: 0),
+    orElse: () => TyGiaModel(currency: '', rate: 0, flagUrl: ''),
   );
   final to = tyGiaList.firstWhere(
     (e) => e.currency == toCurrency,
-    orElse: () => TyGiaModel(currency: '', rate: 0),
+    orElse: () => TyGiaModel(currency: '', rate: 0, flagUrl: ''),
   );
   if (from.rate == 0 || to.rate == 0) return null;
-  // Tính theo tỷ giá so với USD
+
   double usd = amount / from.rate;
   double result = usd * to.rate;
   return result;
