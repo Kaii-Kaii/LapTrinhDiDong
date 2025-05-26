@@ -206,27 +206,23 @@ class _ThemTaiKhoanScreenState extends State<ThemTaiKhoanScreen> {
     final soDu = double.tryParse(soDuStr.replaceAll(',', '')) ?? 0;
 
     final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xác nhận dữ liệu'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Tên tài khoản: $tenTaiKhoan'),
-            Text('Số dư: $soDu (${loaiTien.kyHieu})'),
-            Text('Loại ví (mã): $maViChon'),
-            Text('Loại tiền (mã): ${loaiTien.maLoai}'),
-            Text('Diễn giải: $dienGiai'),
-            Text('Không tính vào báo cáo: ${khongTinhBaoCao ? "Có" : "Không"}'),
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Xác nhận'),
+          content: const Text('Bạn có chắc chắn muốn thêm tài khoản này?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Huỷ'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Xác nhận'),
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Huỷ')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Xác nhận')),
-        ],
-      ),
-    );
+      );
+
 
     if (confirmed != true) return;
 

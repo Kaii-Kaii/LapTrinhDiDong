@@ -18,28 +18,16 @@ class ViNguoiDung {
   });
 
   Map<String, dynamic> toJson() {
-    final loaiTien = getLoaiTienByMa(maLoaiTien);
+  return {
+    'maNguoiDung': maNguoiDung,
+    'maVi': maVi,
+    'tenTaiKhoan': tenTaiKhoan,
+    'maLoaiTien': maLoaiTien,
+    'dienGiai': dienGiai,
+    'soDu': soDu,
+  };
+}
 
-    return {
-      'tenTaiKhoan': tenTaiKhoan,
-      'dienGiai': dienGiai,
-      'soDu': soDu,
-      'vi': {
-        'maVi': maVi ?? 0,
-      },
-      'loaiTien': {
-        'maLoaiTien': maLoaiTien,
-        'tenLoai': loaiTien?.tenLoai ?? 'Unknown',
-        'kyHieu': loaiTien?.kyHieu ?? '',
-        'menhGia': loaiTien?.menhGia ?? '0',
-      },
-      'khachHang': {
-        'maKH': maNguoiDung,
-        'taiKhoan': 'user001',
-        'maTaiKhoan': 'TK001',
-      },
-    };
-  }
 
   factory ViNguoiDung.fromJson(Map<String, dynamic> json) {
     return ViNguoiDung(
