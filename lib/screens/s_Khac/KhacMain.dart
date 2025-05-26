@@ -5,32 +5,93 @@ import 'package:qltncn/screens/s_Khac/TienIch/han_muc_chi_screen.dart';
 import 'package:qltncn/model/TaiKhoan/TaiKhoan.dart';
 import 'package:qltncn/model/TaiKhoan/TaiKhoan_service.dart';
 import 'package:qltncn/model/KhachHang/khachhang_service.dart';
+import 'package:qltncn/screens/s_Khac/TienIch/TyGiaScreen.dart';
 
 class KhacMain extends StatelessWidget {
   final String maKH;
-  
+
   KhacMain({super.key, required this.maKH});
 
   final List<GirdItem> tinhNangList = [
-    GirdItem(title: 'Hạn mức chi', icon: Icons.money_off, iconColor: Colors.red),
-    GirdItem(title: 'Hạng mục thu/chi', icon: Icons.list_alt, iconColor: Colors.blueAccent),
-    GirdItem(title: 'Danh sách mua sắm', icon: Icons.shopping_cart, iconColor: Colors.blue),
-    GirdItem(title: 'Ghi chép định kỳ', icon: Icons.repeat, iconColor: Colors.orange),
+    GirdItem(
+      title: 'Hạn mức chi',
+      icon: Icons.money_off,
+      iconColor: Colors.red,
+    ),
+    GirdItem(
+      title: 'Hạng mục thu/chi',
+      icon: Icons.list_alt,
+      iconColor: Colors.blueAccent,
+    ),
+    GirdItem(
+      title: 'Danh sách mua sắm',
+      icon: Icons.shopping_cart,
+      iconColor: Colors.blue,
+    ),
+    GirdItem(
+      title: 'Ghi chép định kỳ',
+      icon: Icons.repeat,
+      iconColor: Colors.orange,
+    ),
     GirdItem(title: 'Ghi chép mẫu', icon: Icons.note, iconColor: Colors.purple),
-    GirdItem(title: 'Du lịch', icon: Icons.travel_explore, iconColor: Colors.green),
-    GirdItem(title: 'Dự thu/Dự chi', icon: Icons.archive, iconColor: Colors.amber),
-    GirdItem(title: 'Xuất khẩu dữ liệu', icon: Icons.file_upload, iconColor: Colors.deepPurple),
+    GirdItem(
+      title: 'Du lịch',
+      icon: Icons.travel_explore,
+      iconColor: Colors.green,
+    ),
+    GirdItem(
+      title: 'Dự thu/Dự chi',
+      icon: Icons.archive,
+      iconColor: Colors.amber,
+    ),
+    GirdItem(
+      title: 'Xuất khẩu dữ liệu',
+      icon: Icons.file_upload,
+      iconColor: Colors.deepPurple,
+    ),
   ];
 
   final List<GirdItem> tienIchList = [
-    GirdItem(title: 'Tra cứu tỷ giá', icon: Icons.money_off_csred_outlined, iconColor: Colors.blue),
-    GirdItem(title: 'Tính lãi vay', icon: Icons.calculate, iconColor: Colors.teal),
-    GirdItem(title: 'Tiết kiệm gửi góp', icon: Icons.savings, iconColor: Colors.red),
-    GirdItem(title: 'Thuế TNCN', icon: Icons.people_outline, iconColor: Colors.green),
-    GirdItem(title: 'Chia tiền', icon: Icons.money_rounded, iconColor: Colors.orange),
-    GirdItem(title: 'Widget', icon: Icons.widgets_rounded, iconColor: Colors.lightBlue),
-    GirdItem(title: 'Tìm kế toán dịch vụ', icon: Icons.event, iconColor: Colors.lightGreen),
-    GirdItem(title: 'Premium miễn phí', icon: Icons.compare_arrows_rounded, iconColor: Colors.purple),
+    GirdItem(
+      title: 'Tra cứu tỷ giá',
+      icon: Icons.money_off_csred_outlined,
+      iconColor: Colors.blue,
+    ),
+    GirdItem(
+      title: 'Tính lãi vay',
+      icon: Icons.calculate,
+      iconColor: Colors.teal,
+    ),
+    GirdItem(
+      title: 'Tiết kiệm gửi góp',
+      icon: Icons.savings,
+      iconColor: Colors.red,
+    ),
+    GirdItem(
+      title: 'Thuế TNCN',
+      icon: Icons.people_outline,
+      iconColor: Colors.green,
+    ),
+    GirdItem(
+      title: 'Chia tiền',
+      icon: Icons.money_rounded,
+      iconColor: Colors.orange,
+    ),
+    GirdItem(
+      title: 'Widget',
+      icon: Icons.widgets_rounded,
+      iconColor: Colors.lightBlue,
+    ),
+    GirdItem(
+      title: 'Tìm kế toán dịch vụ',
+      icon: Icons.event,
+      iconColor: Colors.lightGreen,
+    ),
+    GirdItem(
+      title: 'Premium miễn phí',
+      icon: Icons.compare_arrows_rounded,
+      iconColor: Colors.purple,
+    ),
   ];
 
   @override
@@ -151,49 +212,65 @@ class KhacMain extends StatelessWidget {
   }
 
   Widget _buildPointAndCode() {
-  return FutureBuilder<KhachHang?>(
-    future: KhachHangService.fetchKhachHangByMaKH(maKH), // Lấy thông tin khách hàng
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Padding(
-          padding: EdgeInsets.all(16),
-          child: Center(child: CircularProgressIndicator()), // Hiển thị loading khi đang chờ dữ liệu
+    return FutureBuilder<KhachHang?>(
+      future: KhachHangService.fetchKhachHangByMaKH(
+        maKH,
+      ), // Lấy thông tin khách hàng
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(
+              child: CircularProgressIndicator(),
+            ), // Hiển thị loading khi đang chờ dữ liệu
+          );
+        } else if (snapshot.hasError) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              "Lỗi khi tải thông tin khách hàng",
+            ), // Xử lý lỗi khi lấy dữ liệu
+          );
+        } else if (!snapshot.hasData || snapshot.data == null) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              "Không tìm thấy thông tin khách hàng",
+            ), // Nếu không có dữ liệu
+          );
+        }
+
+        final khachHang = snapshot.data!; // Lấy dữ liệu khách hàng
+        String xuText =
+            (khachHang.xu > 0)
+                ? "${khachHang.xu} xu" // Nếu có xu và số xu > 0
+                : "Chưa có xu"; // Nếu không có xu hoặc xu = 0
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              _buildInfoCard(
+                Icons.monetization_on,
+                "Xu của bạn",
+                xuText,
+                Colors.orange,
+              ),
+              const SizedBox(width: 8),
+              _buildInfoCard(Icons.share, "Mã chia sẻ", "44010", Colors.blue),
+            ],
+          ),
         );
-      } else if (snapshot.hasError) {
-        return const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text("Lỗi khi tải thông tin khách hàng"), // Xử lý lỗi khi lấy dữ liệu
-        );
-      } else if (!snapshot.hasData || snapshot.data == null) {
-        return const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text("Không tìm thấy thông tin khách hàng"), // Nếu không có dữ liệu
-        );
-      }
+      },
+    );
+  }
 
-      final khachHang = snapshot.data!; // Lấy dữ liệu khách hàng
-      String xuText = (khachHang.xu > 0)
-          ? "${khachHang.xu} xu" // Nếu có xu và số xu > 0
-          : "Chưa có xu"; // Nếu không có xu hoặc xu = 0
-
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            _buildInfoCard(Icons.monetization_on, "Xu của bạn", xuText, Colors.orange),
-            const SizedBox(width: 8),
-            _buildInfoCard(Icons.share, "Mã chia sẻ", "44010", Colors.blue),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-
-
-
-  Widget _buildInfoCard(IconData icon, String label, String value, Color iconColor) {
+  Widget _buildInfoCard(
+    IconData icon,
+    String label,
+    String value,
+    Color iconColor,
+  ) {
     return Expanded(
       child: Container(
         height: 60,
@@ -219,7 +296,11 @@ class KhacMain extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(BuildContext context, String title, List<GirdItem> items) {
+  Widget _buildSection(
+    BuildContext context,
+    String title,
+    List<GirdItem> items,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Container(
@@ -259,7 +340,10 @@ class KhacMain extends StatelessWidget {
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 6,
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -294,6 +378,12 @@ class KhacMain extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => HanMucChiScreen()),
+        );
+        break;
+      case 'Tra cứu tỷ giá':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TraCuuTyGiaScreen()),
         );
         break;
       default:
