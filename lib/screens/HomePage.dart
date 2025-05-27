@@ -8,7 +8,14 @@ import 'package:qltncn/screens/s_TongQuan/TongQuan.dart';
 
 class HomePage extends StatefulWidget {
   final String maKH;
-  const HomePage({super.key, required this.maKH});
+  final String userName; // Thêm userName
+
+  const HomePage({
+    super.key,
+    required this.maKH,
+    required this.userName,
+  }); // Thêm userName vào constructor
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -19,11 +26,11 @@ class _HomePageState extends State<HomePage> {
   // Khởi tạo _widgetOptions trong phương thức build
   List<Widget> get _widgetOptions {
     return <Widget>[
-      TongQuanScreen(),
+      TongQuanScreen(userName: widget.userName), // Truyền userName vào đây
       TaikhoanMain(maKH: widget.maKH),
       NhapVaoScreen(),
       Main_BaoCao(),
-      KhacMain(maKH: widget.maKH),  // Sử dụng widget.maKH
+      KhacMain(maKH: widget.maKH),
     ];
   }
 
@@ -39,9 +46,7 @@ class _HomePageState extends State<HomePage> {
       body: _widgetOptions[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home), 
-            label: 'Tổng quan'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Tổng quan'),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_balance_wallet),
             label: 'Tài khoản',
@@ -54,9 +59,7 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.bar_chart),
             label: 'Báo cáo',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.more_horiz), 
-            label: 'Khác'),
+          BottomNavigationBarItem(icon: Icon(Icons.more_horiz), label: 'Khác'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,

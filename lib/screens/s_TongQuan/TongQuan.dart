@@ -7,7 +7,9 @@ import 'ThemChuyenDi.dart';
 import 'TraCuuTyGia.dart';
 
 class TongQuanScreen extends StatefulWidget {
-  const TongQuanScreen({super.key});
+  final String userName; // Nhận tên người dùng từ màn hình trước
+
+  const TongQuanScreen({super.key, required this.userName});
 
   @override
   _TongQuanScreenState createState() => _TongQuanScreenState();
@@ -25,7 +27,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
   String selectedTimePeriod = "Tháng này";
   DateTime selectedDate = DateTime.now();
 
-  String userName = "Người dùng";
+  late String userName;
 
   bool isBalanceVisible = true;
 
@@ -58,6 +60,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
   @override
   void initState() {
     super.initState();
+    userName = widget.userName; // Gán tên người dùng từ widget
     // _loadData();
   }
 
@@ -208,7 +211,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Chào $userName!",
+                        "Chào $userName!", // Hiển thị tên người dùng
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,

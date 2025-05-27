@@ -88,7 +88,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập tên đăng nhập và mật khẩu')),
+        const SnackBar(
+          content: Text('Vui lòng nhập tên đăng nhập và mật khẩu'),
+        ),
       );
       return;
     }
@@ -119,7 +121,9 @@ class _LoginScreenState extends State<LoginScreen> {
           final maKH = await KhachHangService.fetchMaKHByMaTaiKhoan(matk);
           if (maKH == null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Không tìm thấy khách hàng tương ứng')),
+              const SnackBar(
+                content: Text('Không tìm thấy khách hàng tương ứng'),
+              ),
             );
             return;
           }
@@ -128,9 +132,12 @@ class _LoginScreenState extends State<LoginScreen> {
             const SnackBar(content: Text('Đăng nhập thành công!')),
           );
 
+          // Truyền tên người dùng đến TongQuanScreen
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => HomePage(maKH: maKH)),
+            MaterialPageRoute(
+              builder: (_) => HomePage(maKH: maKH, userName: username),
+            ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -143,9 +150,9 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi kết nối: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi kết nối: $e')));
     }
   }
 }
