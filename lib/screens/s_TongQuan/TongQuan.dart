@@ -5,14 +5,18 @@ import 'LichSuGhiChep.dart';
 import 'ThemHanMucChi.dart';
 import 'ThemChuyenDi.dart';
 import 'TraCuuTyGia.dart';
+import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung.dart';
+import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung_service.dart';
+import 'package:qltncn/widget/vi_utils.dart';
+import 'package:qltncn/model/Vi/Vi/Vi.dart';
 
 class TongQuanScreen extends StatefulWidget {
-  final String userName; // Nhận tên người dùng từ màn hình trước
-
-  const TongQuanScreen({super.key, required this.userName});
+  final String userName;
+  final String maKH;
 
   @override
   _TongQuanScreenState createState() => _TongQuanScreenState();
+  const TongQuanScreen({super.key, required this.userName, required this.maKH});
 }
 
 class _TongQuanScreenState extends State<TongQuanScreen> {
@@ -27,7 +31,22 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
   String selectedTimePeriod = "Tháng này";
   DateTime selectedDate = DateTime.now();
 
-  late String userName;
+  late String userName; // Tên người dùng sẽ được gán từ widget
+  late String maKH;
+
+  Future<void> _loadDanhSachVi() async {
+    final data = await ViNguoiDungService.fetchViNguoiDungByMaKhachHang(
+      widget.maKH,
+    );
+    setState(() {
+      danhSachVi = data;
+    });
+  }
+
+  List<ViNguoiDung> danhSachVi = [];
+  double get tongSoDu {
+    return danhSachVi.fold(0.0, (sum, vi) => sum + vi.soDu);
+  }
 
   bool isBalanceVisible = true;
 
@@ -61,7 +80,8 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
   void initState() {
     super.initState();
     userName = widget.userName; // Gán tên người dùng từ widget
-    // _loadData();
+    maKH = widget.maKH; // Gán maKH từ widget
+    _loadDanhSachVi(); // Gọi phương thức để tải dữ liệu
   }
 
   // Future<void> _loadData() async {
@@ -186,6 +206,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double currentBalance = totalIncome - totalExpense;
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: SafeArea(
@@ -298,7 +319,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Số dư hiện tại",
+                          "Số dư hiện tại" + (isBalanceVisible ? "" : " (Ẩn)"),
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey[600],
@@ -322,12 +343,12 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                     SizedBox(height: 8),
                     Text(
                       isBalanceVisible
-                          ? "${(totalIncome - totalExpense).toStringAsFixed(2)} đ"
+                          ? "${tongSoDu.toStringAsFixed(0)} đ"
                           : "****** đ",
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: currentBalance >= 0 ? Colors.green : Colors.red,
                       ),
                     ),
                   ],

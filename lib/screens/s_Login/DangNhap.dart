@@ -15,6 +15,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  bool _isPasswordHidden = true; // Biến trạng thái để ẩn/hiện mật khẩu
 
   @override
   Widget build(BuildContext context) {
@@ -46,11 +47,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 20),
                 TextField(
                   controller: passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
+                  obscureText: _isPasswordHidden, // Sử dụng biến trạng thái
+                  decoration: InputDecoration(
                     labelText: "Mật khẩu",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordHidden
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordHidden =
+                              !_isPasswordHidden; // Đổi trạng thái
+                        });
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -65,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text("Đăng nhập"),
                 ),
                 TextButton(
+                  // Nút đăng ký
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -132,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
             const SnackBar(content: Text('Đăng nhập thành công!')),
           );
 
-          // Truyền tên người dùng đến TongQuanScreen
+          // Truyền tên người dùng và maKH đến HomePage
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(

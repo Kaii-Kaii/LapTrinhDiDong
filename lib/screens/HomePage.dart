@@ -7,14 +7,10 @@ import 'package:qltncn/screens/s_TaiKhoan/TaiKhoanMain.dart';
 import 'package:qltncn/screens/s_TongQuan/TongQuan.dart';
 
 class HomePage extends StatefulWidget {
+  final String userName;
   final String maKH;
-  final String userName; // Thêm userName
 
-  const HomePage({
-    super.key,
-    required this.maKH,
-    required this.userName,
-  }); // Thêm userName vào constructor
+  const HomePage({super.key, required this.userName, required this.maKH});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -26,7 +22,10 @@ class _HomePageState extends State<HomePage> {
   // Khởi tạo _widgetOptions trong phương thức build
   List<Widget> get _widgetOptions {
     return <Widget>[
-      TongQuanScreen(userName: widget.userName), // Truyền userName vào đây
+      TongQuanScreen(
+        userName: widget.userName,
+        maKH: widget.maKH,
+      ), // Truyền userName và maKH vào đây
       TaikhoanMain(maKH: widget.maKH),
       NhapVaoScreen(),
       Main_BaoCao(),
