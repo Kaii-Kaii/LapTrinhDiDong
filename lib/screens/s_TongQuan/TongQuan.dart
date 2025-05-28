@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:qltncn/model/KhachHang/khachhang_service.dart';
 import 'dart:math';
 import 'LichSuGhiChep.dart';
 import 'ThemHanMucChi.dart';
@@ -9,6 +10,8 @@ import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung.dart';
 import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung_service.dart';
 import 'package:qltncn/widget/vi_utils.dart';
 import 'package:qltncn/model/Vi/Vi/Vi.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class TongQuanScreen extends StatefulWidget {
   final String userName;
@@ -33,6 +36,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
 
   late String userName; // Tên người dùng sẽ được gán từ widget
   late String maKH;
+  String? hoTenKhachHang;
 
   Future<void> _loadDanhSachVi() async {
     final data = await ViNguoiDungService.fetchViNguoiDungByMaKhachHang(
@@ -42,6 +46,30 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
       danhSachVi = data;
     });
   }
+  Future<void> _loadKhachHang() async {
+    final khachHang = await KhachHangService.fetchKhachHangByMaKH(widget.maKH);
+    if (khachHang != null && khachHang.hoTen != null && khachHang.hoTen!.isNotEmpty) {
+      setState(() {
+        hoTenKhachHang = khachHang.hoTen;
+      });
+    }
+  }
+
+  Future<void> _loadBalanceVisibility() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool? savedVisibility = prefs.getBool('isBalanceVisible');
+    if (savedVisibility != null) {
+      setState(() {
+        isBalanceVisible = savedVisibility;
+      });
+    }
+  }
+
+  Future<void> _saveBalanceVisibility(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isBalanceVisible', value);
+  }
+
 
   List<ViNguoiDung> danhSachVi = [];
   double get tongSoDu {
@@ -91,7 +119,10 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
     super.initState();
     userName = widget.userName; // Gán tên người dùng từ widget
     maKH = widget.maKH; // Gán maKH từ widget
+    
     _loadDanhSachVi(); // Gọi phương thức để tải dữ liệu
+    _loadKhachHang();
+    _loadBalanceVisibility();
   }
 
   // Future<void> _loadData() async {
@@ -111,7 +142,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
   //     totalExpense = expense.values.fold(0, (sum, value) => sum + value);
   //   });
   // }
-
+  
   void _selectDate(BuildContext context) async {
     DateTime? picked = await showDatePicker(
       context: context,
@@ -242,13 +273,14 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "Chào $userName!", // Hiển thị tên người dùng
+                        "Chào ${hoTenKhachHang ?? userName}!",
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
                       ),
+
                       Row(
                         children: [
                           IconButton(
@@ -346,8 +378,10 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                             setState(() {
                               isBalanceVisible = !isBalanceVisible;
                             });
+                            _saveBalanceVisibility(isBalanceVisible); // Lưu trạng thái mới
                           },
                         ),
+
                       ],
                     ),
                     SizedBox(height: 8),
