@@ -1,4 +1,4 @@
-import 'package:qltncn/model/LoaiTien/LoaiTien.dart';
+
 
 class ViNguoiDung {
   String maNguoiDung;
