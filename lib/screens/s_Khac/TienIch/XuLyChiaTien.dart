@@ -15,16 +15,28 @@ class CachChiaScreen extends StatefulWidget {
 }
 
 class _CachChiaScreenState extends State<CachChiaScreen> {
-  int selectedTab =
-      0; // 0: Chia đều, 1: Chia theo phần trăm, 2: Chia chênh lệch
   List<double> chiaTien = [];
   List<double> phanTram = [];
-  List<double> chenhLech = [];
+  List<bool> phanTramDaNhap = [];
+  List<bool> tienDaNhap = []; // Thêm vào danh sách biến của class
+  List<TextEditingController> phanTramControllers = [];
+  List<TextEditingController> tienControllers = [];
+  String _cheDoChia = "Chia theo %";
 
   @override
   void initState() {
     super.initState();
     _initChiaTien();
+    phanTramControllers = List.generate(
+      widget.soThanhVien,
+      (index) =>
+          TextEditingController(text: phanTram[index].toStringAsFixed(2)),
+    );
+    tienControllers = List.generate(
+      widget.soThanhVien,
+      (index) =>
+          TextEditingController(text: chiaTien[index].toStringAsFixed(2)),
+    );
   }
 
   void _initChiaTien() {
@@ -33,46 +45,85 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
       widget.tongTien / widget.soThanhVien,
     );
     phanTram = List.filled(widget.soThanhVien, 100 / widget.soThanhVien);
-    chenhLech = List.filled(widget.soThanhVien, 0);
+    phanTramDaNhap = List.filled(widget.soThanhVien, false);
+    tienDaNhap = List.filled(widget.soThanhVien, false);
   }
 
   void _reset() {
     setState(() {
       _initChiaTien();
-    });
-  }
-
-  void _updateChenhLech(int index, double value) {
-    setState(() {
-      chenhLech[index] = value;
-      double tongChenhLech = chenhLech.reduce((a, b) => a + b);
-      double chiaTrungBinh =
-          (widget.tongTien - tongChenhLech) / widget.soThanhVien;
-
       for (int i = 0; i < widget.soThanhVien; i++) {
-        chiaTien[i] = chiaTrungBinh + chenhLech[i];
+        phanTramControllers[i].text = phanTram[i].toStringAsFixed(2);
+        tienControllers[i].text = chiaTien[i].toStringAsFixed(2);
       }
     });
   }
 
   void _updatePhanTram(int index, double value) {
     setState(() {
+      phanTramDaNhap[index] = true;
       phanTram[index] = value;
-      double tongPhanTram = phanTram.reduce((a, b) => a + b);
 
-      // Điều chỉnh phần trăm còn lại cho các thành viên khác
-      if (tongPhanTram > 100) {
-        double phanTramConLai = 100 - value;
-        for (int i = 0; i < widget.soThanhVien; i++) {
-          if (i != index) {
-            phanTram[i] = phanTramConLai / (widget.soThanhVien - 1);
-          }
+      double tongDaNhap = 0;
+      int chuaNhapCount = 0;
+
+      for (int i = 0; i < widget.soThanhVien; i++) {
+        if (phanTramDaNhap[i]) {
+          tongDaNhap += phanTram[i];
+        } else {
+          chuaNhapCount++;
         }
       }
 
-      // Cập nhật số tiền dựa trên phần trăm
+      double phanTramConLai = 100 - tongDaNhap;
+      for (int i = 0; i < widget.soThanhVien; i++) {
+        if (!phanTramDaNhap[i]) {
+          phanTram[i] = chuaNhapCount > 0 ? phanTramConLai / chuaNhapCount : 0;
+          phanTramControllers[i].text = phanTram[i].toStringAsFixed(2);
+        }
+      }
+
       for (int i = 0; i < widget.soThanhVien; i++) {
         chiaTien[i] = (phanTram[i] / 100) * widget.tongTien;
+      }
+    });
+  }
+
+  void _updateTien(int index, double value) {
+    setState(() {
+      tienDaNhap[index] = true;
+      chiaTien[index] = value;
+
+      // Tính tổng tiền đã nhập
+      double tongDaNhap = 0;
+      int chuaNhapCount = 0;
+
+      for (int i = 0; i < widget.soThanhVien; i++) {
+        if (tienDaNhap[i]) {
+          tongDaNhap += chiaTien[i];
+        } else {
+          chuaNhapCount++;
+        }
+      }
+
+      // Kiểm tra nếu tổng tiền đã nhập vượt quá tổng tiền
+      if (tongDaNhap > widget.tongTien) {
+        _reset();
+        return;
+      }
+
+      // Phân bổ số tiền còn lại cho các thành viên chưa nhập
+      double tienConLai = widget.tongTien - tongDaNhap;
+      for (int i = 0; i < widget.soThanhVien; i++) {
+        if (!tienDaNhap[i]) {
+          chiaTien[i] = chuaNhapCount > 0 ? tienConLai / chuaNhapCount : 0;
+          tienControllers[i].text = chiaTien[i].toStringAsFixed(2);
+        }
+      }
+
+      // Cập nhật phần trăm cho tất cả thành viên
+      for (int i = 0; i < widget.soThanhVien; i++) {
+        phanTram[i] = (chiaTien[i] / widget.tongTien) * 100;
       }
     });
   }
@@ -81,236 +132,346 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Cách chia"),
-        backgroundColor: Colors.blue,
+        title: const Text("Chọn chế độ chia tiền"),
+        backgroundColor: Colors.teal,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _reset),
           IconButton(
-            icon: const Icon(Icons.arrow_forward),
+            icon: const Icon(Icons.done),
             onPressed: () {
-              // Ví dụ: Hiển thị kết quả chia tiền
               showDialog(
                 context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: const Text("Kết quả chia tiền"),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: List.generate(widget.soThanhVien, (i) {
-                        return Text(
-                          "Thành viên ${i + 1}: ${chiaTien[i].toStringAsFixed(2)}",
-                        );
-                      }),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Đóng"),
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text("Kết quả chia tiền"),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(widget.soThanhVien, (i) {
+                          return Text(
+                            "Thành viên ${i + 1}: ${chiaTien[i].toStringAsFixed(2)} đ (${phanTram[i].toStringAsFixed(2)}%)",
+                          );
+                        }),
                       ),
-                    ],
-                  );
-                },
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("Đóng"),
+                        ),
+                      ],
+                    ),
               );
             },
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Tabs
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildTabButton("=", 0),
-              _buildTabButton("%", 1),
-              _buildTabButton("+/-", 2),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Tổng tiền
-          Text(
-            "Tổng tiền: ${widget.tongTien.toStringAsFixed(0)}",
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          // Nội dung theo tab
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child:
-                  selectedTab == 0
-                      ? _buildChiaDeu()
-                      : selectedTab == 1
-                      ? _buildChiaTheoPhanTram()
-                      : _buildChiaChenhLech(),
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Text(
+              "Tổng tiền: ${widget.tongTien.toStringAsFixed(0)} đ",
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabButton(String label, int index) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedTab = index;
-        });
-      },
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: selectedTab == index ? Colors.blue : Colors.grey,
-            ),
-          ),
-          if (selectedTab == index)
-            Container(
-              margin: const EdgeInsets.only(top: 4),
-              height: 2,
-              width: 40,
-              color: Colors.blue,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChiaDeu() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "CHIA ĐỀU",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        for (int i = 0; i < widget.soThanhVien; i++)
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.redAccent,
-              child: Text((i + 1).toString()),
-            ),
-            title: Text("Thành viên ${i + 1}"),
-            trailing: Text(
-              chiaTien[i].toStringAsFixed(2),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildChiaTheoPhanTram() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "CHIA THEO PHẦN TRĂM",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        for (int i = 0; i < widget.soThanhVien; i++)
-          Card(
-            margin: const EdgeInsets.symmetric(vertical: 4),
-            child: Padding(
+            const SizedBox(height: 16),
+            Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Wrap(
+                spacing: 8, // Khoảng cách giữa các nút theo chiều ngang
+                runSpacing: 8, // Khoảng cách giữa các hàng
+                alignment: WrapAlignment.center,
                 children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.orangeAccent,
-                    child: Text((i + 1).toString()),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text(
-                        "Thành viên ${i + 1}",
-                        style: const TextStyle(fontSize: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _cheDoChia = "Chia theo %";
+                        _reset();
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _cheDoChia == "Chia theo %"
+                              ? Colors.teal
+                              : Colors.grey,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    width: 80,
-                    child: TextField(
-                      controller: TextEditingController(
-                        text: phanTram[i].toStringAsFixed(2),
-                      ),
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        suffixText: "%",
-                      ),
-                      onChanged: (value) {
-                        _updatePhanTram(i, double.tryParse(value) ?? 0);
-                      },
+                    child: const Text(
+                      "Chia theo %",
+                      style: TextStyle(fontSize: 14),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "${chiaTien[i].toStringAsFixed(2)} đ",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _cheDoChia = "Chia đều";
+                        _reset();
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _cheDoChia == "Chia đều" ? Colors.teal : Colors.grey,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: const Text(
+                      "Chia đều",
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _cheDoChia = "Chia theo số tiền";
+                        _reset();
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _cheDoChia == "Chia theo số tiền"
+                              ? Colors.teal
+                              : Colors.grey,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: const Text(
+                      "Chia theo số tiền",
+                      style: TextStyle(fontSize: 14),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-      ],
+            const SizedBox(height: 16),
+            if (_cheDoChia == "Chia theo %")
+              Expanded(
+                child: ListView.builder(
+                  itemCount: widget.soThanhVien,
+                  itemBuilder: (context, i) {
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 4,
+                      ),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 12,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.teal,
+                              child: Text((i + 1).toString()),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Thành viên ${i + 1}",
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "${chiaTien[i].toStringAsFixed(2)} đ",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 70,
+                              child: TextField(
+                                controller: phanTramControllers[i],
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                decoration: const InputDecoration(
+                                  labelText: "%",
+                                  border: OutlineInputBorder(),
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                onTap: () {
+                                  phanTramControllers[i]
+                                      .selection = TextSelection(
+                                    baseOffset: 0,
+                                    extentOffset:
+                                        phanTramControllers[i].text.length,
+                                  );
+                                },
+                                onChanged: (value) {
+                                  double newVal = double.tryParse(value) ?? 0;
+                                  if (newVal < 0) newVal = 0;
+                                  if (newVal > 100) newVal = 100;
+                                  _updatePhanTram(i, newVal);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              )
+            else if (_cheDoChia == "Chia đều")
+              Expanded(
+                child: ListView.builder(
+                  itemCount: widget.soThanhVien,
+                  itemBuilder: (context, i) {
+                    double tienMoiNguoi = widget.tongTien / widget.soThanhVien;
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 4,
+                      ),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.teal,
+                              child: Text((i + 1).toString()),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Thành viên ${i + 1}",
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "${tienMoiNguoi.toStringAsFixed(2)} đ",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              )
+            else if (_cheDoChia == "Chia theo số tiền")
+              Expanded(
+                child: ListView.builder(
+                  itemCount: widget.soThanhVien,
+                  itemBuilder: (context, i) {
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 4,
+                      ),
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.teal,
+                              child: Text((i + 1).toString()),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Thành viên ${i + 1}",
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "${phanTram[i].toStringAsFixed(2)}%",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              width: 120,
+                              child: TextField(
+                                controller: tienControllers[i],
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                decoration: const InputDecoration(
+                                  labelText: "Số tiền",
+                                  border: OutlineInputBorder(),
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 8,
+                                  ),
+                                ),
+                                onTap: () {
+                                  tienControllers[i].selection = TextSelection(
+                                    baseOffset: 0,
+                                    extentOffset:
+                                        tienControllers[i].text.length,
+                                  );
+                                },
+                                onChanged: (value) {
+                                  double newVal = double.tryParse(value) ?? 0;
+                                  if (newVal < 0) newVal = 0;
+                                  if (newVal > widget.tongTien) {
+                                    newVal = widget.tongTien;
+                                  }
+                                  _updateTien(i, newVal);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildChiaChenhLech() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "CHIA CHÊNH LỆCH",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        for (int i = 0; i < widget.soThanhVien; i++)
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.yellowAccent,
-              child: Text((i + 1).toString()),
-            ),
-            title: Text("Thành viên ${i + 1}"),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 60,
-                  child: TextField(
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      hintText: "+/-",
-                    ),
-                    onChanged: (value) {
-                      _updateChenhLech(i, double.tryParse(value) ?? 0);
-                    },
-                  ),
-                ),
-                Text(
-                  "${chiaTien[i].toStringAsFixed(2)}",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
+  @override
+  void dispose() {
+    for (var controller in phanTramControllers) {
+      controller.dispose();
+    }
+    for (var controller in tienControllers) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 }
