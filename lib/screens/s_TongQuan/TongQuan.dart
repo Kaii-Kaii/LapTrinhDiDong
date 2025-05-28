@@ -48,6 +48,16 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
     return danhSachVi.fold(0.0, (sum, vi) => sum + vi.soDu);
   }
 
+  // thêm dấu . vào tongSoDu
+  String get formattedTongSoDu {
+    return tongSoDu
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]}.',
+        );
+  }
+
   bool isBalanceVisible = true;
 
   final List<Color> availableColors = [
@@ -342,9 +352,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      isBalanceVisible
-                          ? "${tongSoDu.toStringAsFixed(0)} đ"
-                          : "****** đ",
+                      isBalanceVisible ? "${formattedTongSoDu} đ" : "****** đ",
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,

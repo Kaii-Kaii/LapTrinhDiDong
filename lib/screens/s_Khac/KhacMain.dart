@@ -8,6 +8,7 @@ import 'package:qltncn/model/KhachHang/khachhang_service.dart';
 import 'package:qltncn/screens/s_Khac/TienIch/TyGiaScreen.dart';
 import 'package:qltncn/screens/s_Khac/TienIch/TinhThueThuNhapCaNhanScreen.dart';
 import 'package:qltncn/screens/s_Khac/TienIch/TinhLaiVayScreen.dart';
+import 'package:qltncn/screens/s_Khac/TienIch/TinhLaiTienGui.dart';
 
 class KhacMain extends StatelessWidget {
   final String maKH;
@@ -398,6 +399,12 @@ class KhacMain extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => TinhLaiVayScreen()),
+        );
+        break;
+      case 'Tiết kiệm gửi góp':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => TinhLaiTienGuiScreen()),
         );
         break;
       default:
