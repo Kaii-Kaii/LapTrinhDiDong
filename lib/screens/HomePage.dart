@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
         maKH: widget.maKH,
       ), // Truyền userName và maKH vào đây
       TaikhoanMain(maKH: widget.maKH),
-      NhapVaoScreen(),
+      NhapVaoScreen(maKH: widget.maKH),
       Main_BaoCao(),
       KhacMain(maKH: widget.maKH),
     ];

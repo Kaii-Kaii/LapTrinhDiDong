@@ -494,7 +494,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => LichSuGhiChep()),
+                      MaterialPageRoute(builder: (context) => LichSuGhiChep(maKH: widget.maKH)),
                     );
                   },
                   icon: Icon(Icons.history, size: 18),
