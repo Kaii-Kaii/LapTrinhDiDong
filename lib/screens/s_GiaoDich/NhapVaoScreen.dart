@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import 'package:qltncn/screens/s_HangMuc/HangMucScreen.dart';
+
 class NhapVaoScreen extends StatefulWidget {
-  const NhapVaoScreen({super.key});
+  final String maKH;
+  const NhapVaoScreen({Key? key, required this.maKH}) : super(key: key);
 
   @override
   State<NhapVaoScreen> createState() => _NhapVaoScreenState();
@@ -60,13 +63,6 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     if (!isTienThu) {
       amount = -amount;
     }
-
-    // await _dbHelper.insertTransaction(
-    //   dateString,
-    //   note,
-    //   amount,
-    //   selectedCategory,
-    // );
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -190,52 +186,36 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     );
   }
 
-  void _showCategorySelection(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Wrap(
-            spacing: 8.0,
-            runSpacing: 4.0,
-            children:
-                (isTienThu ? _incomeCategories : _expenseCategories)
-                    .map((category) => _buildCategoryItem(category))
-                    .toList(),
-          ),
-        );
-      },
+  void _showCategorySelection(BuildContext context) async {
+    // Chuyển sang trang HangMucScreen và nhận kết quả trả về
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HangMucScreen(maKhachHang: widget.maKH),
+      ),
     );
+    if (result != null && result is String) {
+      setState(() {
+        selectedCategory = result;
+      });
+    }
   }
 
-  Widget _buildCategoryItem(String category) {
-    return ElevatedButton(
-      onPressed: () {
-        setState(() {
-          selectedCategory = category;
-        });
-        Navigator.pop(context);
-      },
-      child: Text(category),
-    );
-  }
-
-  List<String> get _incomeCategories => [
-    "Lương",
-    "Thưởng",
-    "Lãi",
-    "Lãi tiết kiệm",
-    "Khác",
-  ];
-  List<String> get _expenseCategories => [
-    "Ăn uống",
-    "Dịch vụ",
-    "Đi lại",
-    "Con cái",
-    "Trang phục",
-    "Sức khỏe",
-    "Hiếu hỉ",
-    "Khác",
-  ];
+  // List<String> get _incomeCategories => [
+  //   "Lương",
+  //   "Thưởng",
+  //   "Lãi",
+  //   "Lãi tiết kiệm",
+  //   "Khác",
+  // ];
+  // List<String> get _expenseCategories => [
+  //   "Ăn uống",
+  //   "Dịch vụ",
+  //   "Đi lại",
+  //   "Con cái",
+  //   "Trang phục",
+  //   "Sức khỏe",
+  //   "Hiếu hỉ",
+  //   "Khác",
+  // ];
 }

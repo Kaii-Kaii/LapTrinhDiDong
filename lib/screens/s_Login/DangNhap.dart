@@ -4,6 +4,8 @@ import 'RegisterScreen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:qltncn/model/KhachHang/khachhang_service.dart';
+import 'package:qltncn/screens/s_Login/ThemThongTinKhachHang.dart';
+import 'package:qltncn/screens/s_Login/CapNhatMatKhauScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,78 +17,126 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  bool _isPasswordHidden = true; // Biến trạng thái để ẩn/hiện mật khẩu
+  bool _isPasswordHidden = true;
+  bool isLoading = false; // Biến trạng thái loading
 
   @override
   Widget build(BuildContext context) {
+    const mainColor = Color(0xFF03A9F4);
+
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(backgroundColor: mainColor, elevation: 0),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Center(
           child: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
                   "Đăng nhập",
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blueAccent,
+                    color: mainColor,
                   ),
                 ),
                 const SizedBox(height: 40),
                 TextField(
                   controller: emailController,
-                  decoration: const InputDecoration(
-                    labelText: "Email",
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.email),
+                  decoration: InputDecoration(
+                    labelText: "Tên đăng nhập",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: mainColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: mainColor, width: 2),
+                    ),
+                    prefixIcon: const Icon(Icons.person, color: mainColor),
                   ),
                 ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: passwordController,
-                  obscureText: _isPasswordHidden, // Sử dụng biến trạng thái
+                  obscureText: _isPasswordHidden,
                   decoration: InputDecoration(
                     labelText: "Mật khẩu",
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.lock),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: mainColor),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: mainColor, width: 2),
+                    ),
+                    prefixIcon: const Icon(Icons.lock, color: mainColor),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isPasswordHidden
                             ? Icons.visibility
                             : Icons.visibility_off,
+                        color: mainColor,
                       ),
                       onPressed: () {
                         setState(() {
-                          _isPasswordHidden =
-                              !_isPasswordHidden; // Đổi trạng thái
+                          _isPasswordHidden = !_isPasswordHidden;
                         });
                       },
                     ),
                   ),
                 ),
                 const SizedBox(height: 30),
-                ElevatedButton(
-                  onPressed: () {
-                    // Xử lý đăng nhập
-                    _login(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
+                if (isLoading)
+                  const LinearProgressIndicator(
+                    color: mainColor,
+                    backgroundColor: Colors.grey,
+                    minHeight: 4,
+                  )
+                else
+                  ElevatedButton(
+                    onPressed: () {
+                      _login(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: mainColor,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text(
+                      "Đăng nhập",
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
                   ),
-                  child: const Text("Đăng nhập"),
-                ),
+                const SizedBox(height: 16),
                 TextButton(
-                  // Nút đăng ký
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => RegisterScreen()),
                     );
                   },
-                  child: const Text("Chưa có tài khoản? Đăng ký"),
+                  child: const Text(
+                    "Chưa có tài khoản? Đăng ký",
+                    style: TextStyle(color: mainColor),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => CapNhatMatKhauScreen()),
+                    );
+                  },
+                  child: const Text(
+                    "Quên mật khẩu?",
+                    style: TextStyle(color: mainColor),
+                  ),
                 ),
               ],
             ),
@@ -110,7 +160,14 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    setState(() {
+      isLoading = true; // Bắt đầu loading
+    });
+
     try {
+      // Thêm delay 1.5 giây
+      await Future.delayed(const Duration(seconds: 1, milliseconds: 500));
+
       final response = await http.get(
         Uri.parse('https://10.0.2.2:7283/api/TaiKhoan'),
         headers: {'Content-Type': 'application/json'},
@@ -124,8 +181,22 @@ class _LoginScreenState extends State<LoginScreen> {
         for (var tk in taiKhoans) {
           final tendangnhap = tk['tendangnhap']?.trim();
           final matkhau = tk['matkhau']?.trim();
+          final isEmailConfirmed = tk['isemailconfirmed'];
 
           if (tendangnhap == username && matkhau == password) {
+            if (isEmailConfirmed == 0) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Tài khoản chưa xác thực email. Vui lòng kiểm tra email để xác thực!',
+                  ),
+                ),
+              );
+              setState(() {
+                isLoading = false; // Dừng loading
+              });
+              return;
+            }
             isAuthenticated = true;
             matk = tk['mataikhoan']?.trim() ?? '';
             break;
@@ -135,9 +206,10 @@ class _LoginScreenState extends State<LoginScreen> {
         if (isAuthenticated) {
           final maKH = await KhachHangService.fetchMaKHByMaTaiKhoan(matk);
           if (maKH == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Không tìm thấy khách hàng tương ứng'),
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AddCustomerInfoScreen(maTaiKhoan: matk),
               ),
             );
             return;
@@ -147,7 +219,6 @@ class _LoginScreenState extends State<LoginScreen> {
             const SnackBar(content: Text('Đăng nhập thành công!')),
           );
 
-          // Truyền tên người dùng và maKH đến HomePage
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -168,6 +239,10 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Lỗi kết nối: $e')));
+    } finally {
+      setState(() {
+        isLoading = false; // Dừng loading
+      });
     }
   }
 }

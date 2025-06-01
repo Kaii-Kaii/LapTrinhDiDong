@@ -5,6 +5,8 @@ import 'package:qltncn/screens/s_Khac/KhacMain.dart';
 import 'package:qltncn/screens/s_TaiKhoan/TaiKhoanMain.dart';
 //import 'package:qltncn/screens/LichScreen.dart';
 import 'package:qltncn/screens/s_TongQuan/TongQuan.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HomePage extends StatefulWidget {
   final String userName;
@@ -27,9 +29,10 @@ class _HomePageState extends State<HomePage> {
         maKH: widget.maKH,
       ), // Truyền userName và maKH vào đây
       TaikhoanMain(maKH: widget.maKH),
-      NhapVaoScreen(),
+      NhapVaoScreen(maKH: widget.maKH),
       Main_BaoCao(),
       KhacMain(maKH: widget.maKH),
+      HangMucScreen(maKhachHang: widget.maKH), // <-- Thêm dòng này
     ];
   }
 
@@ -70,3 +73,75 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+class HangMucScreen extends StatefulWidget {
+  final String maKhachHang;
+  const HangMucScreen({Key? key, required this.maKhachHang}) : super(key: key);
+
+  @override
+  State<HangMucScreen> createState() => _HangMucScreenState();
+}
+
+class _HangMucScreenState extends State<HangMucScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Hạng mục')),
+      body: Center(
+        child: Text('Nội dung hạng mục cho khách hàng ${widget.maKhachHang}'),
+      ),
+    );
+  }
+}
+
+// List<Map<String, dynamic>> getDefaultAccounts(String maKhachHang) {
+//   return [
+//     {
+//       'maNguoiDung': maKhachHang,
+//       'maVi': 1,
+//       'maLoaiTien': 1,
+//       'tenTaiKhoan': 'Ví Tiền Mặt',
+//       'dienGiai': 'Ví Tiền Mặt',
+//       'soDu': 0.0,
+//     },
+//     {
+//       'maNguoiDung': maKhachHang,
+//       'maVi': 2,
+//       'maLoaiTien': 1,
+//       'tenTaiKhoan': 'Tài khoản Vietcombank',
+//       'dienGiai': 'Tài khoản tiết kiệm',
+//       'soDu': 15000000.0,
+//     },
+//     {
+//       'maNguoiDung': maKhachHang,
+//       'maVi': 3,
+//       'maLoaiTien': 1,
+//       'tenTaiKhoan': 'Thẻ tín dụng Techcombank',
+//       'dienGiai': 'Thẻ tín dụng chính',
+//       'soDu': 0.0,
+//     },
+//     {
+//       'maNguoiDung': maKhachHang,
+//       'maVi': 5,
+//       'maLoaiTien': 1,
+//       'tenTaiKhoan': 'Ví điện tử Momo',
+//       'dienGiai': 'Ví điện tử sử dụng thường xuyên',
+//       'soDu': 12000000.0,
+//     },
+//   ];
+// }
+
+// Future<void> _onRegisterSuccess(String maKhachHang) async {
+//   final defaultAccounts = getDefaultAccounts(maKhachHang);
+//   for (final acc in defaultAccounts) {
+//     final response = await http.post(
+//       Uri.parse('https://your-api-url.com/api/ViNguoiDung'),
+//       headers: {'Content-Type': 'application/json'},
+//       body: jsonEncode(acc),
+//     );
+//     if (response.statusCode != 200 && response.statusCode != 201) {
+//       print('Lỗi khi tạo ví: ${response.body}');
+//     }
+//   }
+//   // Chuyển sang HomePage hoặc thông báo thành công
+// }
