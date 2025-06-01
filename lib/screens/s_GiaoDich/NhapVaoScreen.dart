@@ -7,15 +7,12 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import '../s_TongQuan/TongQuan.dart';
-
-
 import 'package:qltncn/screens/s_HangMuc/HangMucScreen.dart';
 
 class NhapVaoScreen extends StatefulWidget {
   final String maKH;
   final Function? onTransactionAdded;
   const NhapVaoScreen({super.key, required this.maKH, this.onTransactionAdded});
-
 
   @override
   State<NhapVaoScreen> createState() => _NhapVaoScreenState();
@@ -28,6 +25,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
   String _selectedType = 'Thu';
   String? _selectedWallet;
   String? _selectedCategory;
+  String? selectedCategory; // Add this missing variable
   double _walletBalance = 0.0;
   bool _isLoading = true;
   String? _error;
@@ -186,6 +184,8 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
               ),
             ],
           ),
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Nhập thành công!'),
@@ -252,10 +252,11 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                NumberFormat.currency(
-                                  locale: 'vi_VN',
-                                  symbol: '₫',
-                                ).format(_walletBalance),
+                                NumberFormat(
+                                      '#,###',
+                                      'en_US',
+                                    ).format(_walletBalance) +
+                                    ' VND',
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -367,16 +368,21 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                         ),
                         keyboardType: TextInputType.number,
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
-                        ],
+                          CurrencyInputFormatter(),
+                        ], // Use currency formatter
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Vui lòng nhập số tiền';
                           }
-                          if (double.tryParse(value) == null) {
+                          // Remove formatting for validation
+                          String cleanValue = value.replaceAll(
+                            RegExp(r'[^0-9]'),
+                            '',
+                          );
+                          if (double.tryParse(cleanValue) == null) {
                             return 'Số tiền không hợp lệ';
                           }
-                          final amount = double.parse(value);
+                          final amount = double.parse(cleanValue);
                           if (amount <= 0) {
                             return 'Số tiền phải lớn hơn 0';
                           }
@@ -481,6 +487,13 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           }
         }
 
+        // Clean amount text for parsing
+        String cleanAmount = _amountController.text.replaceAll(
+          RegExp(r'[^0-9]'),
+          '',
+        );
+        double amount = double.parse(cleanAmount);
+
         // Create transaction
         final response = await http.post(
           Uri.parse('https://10.0.2.2:7283/api/GiaoDich'),
@@ -492,10 +505,12 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
             'maNguoiDung': widget.maKH,
             'maVi': selectedWallet['maVi'],
             'maDanhMucNguoiDung': int.parse(_selectedCategory!),
-            'soTien': double.parse(_amountController.text),
+            'soTien': amount,
             'soTienCu': selectedWallet['soDu'],
             'soTienMoi':
-                selectedWallet['soDu'] + double.parse(_amountController.text),
+                _selectedType == 'Thu'
+                    ? selectedWallet['soDu'] + amount
+                    : selectedWallet['soDu'] - amount,
             'ghiChu': _noteController.text,
             'ngayGiaoDich': DateTime.now().toIso8601String(),
             'loaiGiaoDich': _selectedType,
@@ -511,7 +526,9 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
             await _saveTransactionHistory(
               giaoDichData['maGiaoDich'],
               selectedWallet['soDu'],
-              selectedWallet['soDu'] + double.parse(_amountController.text),
+              _selectedType == 'Thu'
+                  ? selectedWallet['soDu'] + amount
+                  : selectedWallet['soDu'] - amount,
             );
 
             // Save image URL if exists
@@ -631,6 +648,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     _noteController.dispose();
     super.dispose();
   }
+
   void _showCategorySelection(BuildContext context) async {
     // Chuyển sang trang HangMucScreen và nhận kết quả trả về
     final result = await Navigator.push(
@@ -663,4 +681,33 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
   //   "Hiếu hỉ",
   //   "Khác",
   // ];
+}
+
+// Add CurrencyInputFormatter class
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all non-digit characters
+    String digitsOnly = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digitsOnly.isEmpty) {
+      return const TextEditingValue();
+    }
+
+    // Format with comma separator
+    final formatter = NumberFormat('#,###', 'en_US');
+    String formatted = formatter.format(int.parse(digitsOnly));
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
 }

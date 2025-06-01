@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:qltncn/model/Vi/Vi/Vi.dart';
 import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung.dart';
 import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung_service.dart';
@@ -17,6 +19,7 @@ class TabTaiKhoan extends StatefulWidget {
 class _TabTaiKhoanState extends State<TabTaiKhoan> {
   List<ViNguoiDung> danhSachVi = [];
   bool isLoading = true;
+  final NumberFormat currencyFormat = NumberFormat('#,###', 'en_US');
 
   @override
   void initState() {
@@ -25,7 +28,9 @@ class _TabTaiKhoanState extends State<TabTaiKhoan> {
   }
 
   Future<void> _loadDanhSachVi() async {
-    final data = await ViNguoiDungService.fetchViNguoiDungByMaKhachHang(widget.maKH);
+    final data = await ViNguoiDungService.fetchViNguoiDungByMaKhachHang(
+      widget.maKH,
+    );
     setState(() {
       danhSachVi = data;
       isLoading = false;
@@ -38,7 +43,7 @@ class _TabTaiKhoanState extends State<TabTaiKhoan> {
     switch (action) {
       case 'chi_tiet':
         _showDialogChiTietVi(vi);
-      break;
+        break;
       case 'dieu_chinh':
         _showDialogDieuChinhSoDu(vi);
         break;
@@ -48,239 +53,601 @@ class _TabTaiKhoanState extends State<TabTaiKhoan> {
       case 'xoa':
         // TODO: xử lý xóa tài khoản
         break;
-
     }
   }
-  
-
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1565C0)),
+        ),
+      );
     }
 
-    return Column(
-      children: [
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Tổng tiền:', style: TextStyle(fontSize: 16)),
-              Text('${tongSoDu.toStringAsFixed(0)} đ',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFEAF3FF), Colors.white],
         ),
-        const Divider(height: 1),
-        Expanded(
-          child: ListView(
-            children: [
-              ExpansionTile(
-                title: Text(
-                  'Đang sử dụng (${tongSoDu.toStringAsFixed(0)} đ)',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      child: Column(
+        children: [
+          // Header tổng tiền
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF1565C0).withOpacity(0.3),
+                  spreadRadius: 2,
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-                children: danhSachVi.map((viNguoiDung) {
-                  final viMau = tinhNangList.firstWhere(
-                    (vi) => vi.maVi == viNguoiDung.maVi,
-                    orElse: () => Vi(maVi: 0, tenVi: '', loaiVi: '', iconVi: ''),
-                  );
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: const Icon(
+                    Icons.account_balance_wallet,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Tổng số dư',
+                        style: TextStyle(color: Colors.white70, fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${currencyFormat.format(tongSoDu)} VND',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-                  final color = getColorForLoaiVi(viMau.maVi ?? 0);
-                  final iconWidget = getIconWidget(viMau.iconVi ?? '');
-
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: color,
-                      child: iconWidget,
+          // Danh sách ví
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 2,
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1565C0),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
                     ),
-                    title: Text(viNguoiDung.tenTaiKhoan),
-                    subtitle: Text('${viNguoiDung.soDu.toStringAsFixed(0)} đ'),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) => _handleMenuAction(value, viNguoiDung),
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'chi_tiet',
-                          child: ListTile(
-                            leading: Icon(Icons.account_balance),
-                            title: Text('Chi tiêt ví'),
-                          ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.credit_card,
+                          color: Colors.white,
+                          size: 24,
                         ),
-                        const PopupMenuItem(
-                          value: 'dieu_chinh',
-                          child: ListTile(
-                            leading: Icon(Icons.tune),
-                            title: Text('Điều chỉnh số dư'),
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'sua',
-                          child: ListTile(
-                            leading: Icon(Icons.edit),
-                            title: Text('Sửa'),
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'xoa',
-                          child: ListTile(
-                            leading: Icon(Icons.delete),
-                            title: Text('Xóa'),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Danh sách ví (${danhSachVi.length})',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                  );
-                }).toList(),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(8),
+                      itemCount: danhSachVi.length,
+                      itemBuilder: (context, index) {
+                        final viNguoiDung = danhSachVi[index];
+                        final viMau = tinhNangList.firstWhere(
+                          (vi) => vi.maVi == viNguoiDung.maVi,
+                          orElse:
+                              () => Vi(
+                                maVi: 0,
+                                tenVi: '',
+                                loaiVi: '',
+                                iconVi: '',
+                              ),
+                        );
+
+                        final color = getColorForLoaiVi(viMau.maVi ?? 0);
+                        final iconWidget = getIconWidget(viMau.iconVi ?? '');
+
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFF1565C0).withOpacity(0.1),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.05),
+                                spreadRadius: 1,
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            leading: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: color.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: iconWidget,
+                            ),
+                            title: Text(
+                              viNguoiDung.tenTaiKhoan,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Color(0xFF1565C0),
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${currencyFormat.format(viNguoiDung.soDu)} VND',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            trailing: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1565C0).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: PopupMenuButton<String>(
+                                icon: const Icon(
+                                  Icons.more_vert,
+                                  color: Color(0xFF1565C0),
+                                ),
+                                onSelected:
+                                    (value) =>
+                                        _handleMenuAction(value, viNguoiDung),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                itemBuilder:
+                                    (context) => [
+                                      PopupMenuItem(
+                                        value: 'chi_tiet',
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 4,
+                                          ),
+                                          child: const Row(
+                                            children: [
+                                              Icon(
+                                                Icons.account_balance,
+                                                color: Color(0xFF1565C0),
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text('Chi tiết ví'),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'dieu_chinh',
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 4,
+                                          ),
+                                          child: const Row(
+                                            children: [
+                                              Icon(
+                                                Icons.tune,
+                                                color: Color(0xFF1565C0),
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text('Điều chỉnh số dư'),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'sua',
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 4,
+                                          ),
+                                          child: const Row(
+                                            children: [
+                                              Icon(
+                                                Icons.edit,
+                                                color: Color(0xFF1565C0),
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text('Sửa'),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      PopupMenuItem(
+                                        value: 'xoa',
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 4,
+                                          ),
+                                          child: const Row(
+                                            children: [
+                                              Icon(
+                                                Icons.delete,
+                                                color: Colors.red,
+                                              ),
+                                              SizedBox(width: 12),
+                                              Text(
+                                                'Xóa',
+                                                style: TextStyle(
+                                                  color: Colors.red,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  void _showDialogDieuChinhSoDu(ViNguoiDung viNguoiDung) {
+    final TextEditingController controller = TextEditingController(
+      text: currencyFormat.format(viNguoiDung.soDu),
+    );
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            title: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.tune, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text(
+                    'Điều chỉnh số dư',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            content: Container(
+              padding: const EdgeInsets.all(16),
+              child: TextFormField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                inputFormatters: [CurrencyInputFormatter()],
+                decoration: InputDecoration(
+                  labelText: 'Số dư mới',
+                  labelStyle: const TextStyle(color: Color(0xFF1565C0)),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Color(0xFF1565C0)),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(
+                      color: Color(0xFF1565C0),
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.account_balance_wallet,
+                    color: Color(0xFF1565C0),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFEAF3FF),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.grey[700],
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text('Hủy', style: TextStyle(fontSize: 16)),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () async {
+                    // Remove formatting for parsing
+                    String cleanValue = controller.text.replaceAll(
+                      RegExp(r'[^0-9]'),
+                      '',
+                    );
+                    final newSoDu = double.tryParse(cleanValue);
+
+                    if (newSoDu == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Số dư không hợp lệ'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    ViNguoiDung viCapNhat = ViNguoiDung(
+                      maNguoiDung: viNguoiDung.maNguoiDung,
+                      maVi: viNguoiDung.maVi,
+                      tenTaiKhoan: viNguoiDung.tenTaiKhoan,
+                      maLoaiTien: viNguoiDung.maLoaiTien,
+                      dienGiai: viNguoiDung.dienGiai,
+                      soDu: newSoDu,
+                    );
+
+                    bool success =
+                        await ViNguoiDungService.capNhatViNguoiDungFull(
+                          maNguoiDung: viCapNhat.maNguoiDung,
+                          maVi: viCapNhat.maVi!,
+                          tenTaiKhoanCu: viCapNhat.tenTaiKhoan,
+                          viNguoiDungMoi: viCapNhat,
+                        );
+
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Cập nhật số dư thành công'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      Navigator.pop(context);
+                      if (mounted) _loadDanhSachVi();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('❌ Cập nhật số dư thất bại'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text(
+                    'Lưu',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-        ),
-      ],
-    );
-  }
-  void _showDialogDieuChinhSoDu(ViNguoiDung viNguoiDung) {
-  final TextEditingController controller = TextEditingController(text: viNguoiDung.soDu.toString());
-
-  showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Điều chỉnh số dư',
-          style: TextStyle(
-            color: Colors.blueAccent,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: 'Số dư mới',
-            labelStyle: const TextStyle(color: Colors.blue),
-            enabledBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Colors.blueAccent),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: Colors.blue, width: 2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            prefixIcon: const Icon(Icons.account_balance_wallet, color: Colors.blueAccent),
-          ),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.grey[700],
-            ),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-            onPressed: () async {
-              final newSoDu = double.tryParse(controller.text);
-              if (newSoDu == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Số dư không hợp lệ')),
-                );
-                return;
-              }
-
-              // Tạo đối tượng cập nhật toàn bộ, nhưng chỉ thay đổi số dư mới nhập,
-              // các trường còn lại giữ nguyên giá trị cũ.
-              ViNguoiDung viCapNhat = ViNguoiDung(
-                maNguoiDung: viNguoiDung.maNguoiDung,
-                maVi: viNguoiDung.maVi,
-                tenTaiKhoan: viNguoiDung.tenTaiKhoan,
-                maLoaiTien: viNguoiDung.maLoaiTien,
-                dienGiai: viNguoiDung.dienGiai,
-                soDu: newSoDu,  // thay đổi số dư mới
-              );
-
-              bool success = await ViNguoiDungService.capNhatViNguoiDungFull(
-                  maNguoiDung: viCapNhat.maNguoiDung,
-                  maVi: viCapNhat.maVi!,
-                  tenTaiKhoanCu: viCapNhat.tenTaiKhoan,  // tên ví cũ để tìm ví
-                  viNguoiDungMoi: viCapNhat,
-                );
-
-              if (success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('✅ Cập nhật số dư thành công')),
-                );
-                Navigator.pop(context);
-                if (mounted) _loadDanhSachVi();
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('❌ Cập nhật số dư thất bại')),
-                );
-              }
-            },
-            child: const Text(
-              'Lưu',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   void _showDialogChiTietVi(ViNguoiDung viNguoiDung) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-          side: const BorderSide(color: Colors.blueAccent, width: 2),
-        ),
-        title: const Text(
-          'Chi tiết ví',
-          style: TextStyle(
-            color: Colors.blueAccent,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            title: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.account_balance, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text(
+                    'Chi tiết ví',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            content: Container(
+              width: MediaQuery.of(context).size.width * 0.8,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildDetailCard(
+                    'Tên ví',
+                    viNguoiDung.tenTaiKhoan,
+                    Icons.account_balance_wallet,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDetailCard(
+                    'Diễn giải',
+                    viNguoiDung.dienGiai ?? 'Không có',
+                    Icons.description,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDetailCard(
+                    'Số dư',
+                    '${currencyFormat.format(viNguoiDung.soDu)} VND',
+                    Icons.monetization_on,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Đóng',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-        content: SingleChildScrollView(
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.7, // làm to dialog
+    );
+  }
+
+  Widget _buildDetailCard(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF3FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF1565C0).withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF1565C0), size: 24),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildDetailRow('Tên ví:', viNguoiDung.tenTaiKhoan),
-                const SizedBox(height: 15),
-                _buildDetailRow('Diễn giải:', viNguoiDung.dienGiai ?? 'Không có'),
-                const SizedBox(height: 15),
-                _buildDetailRow('Số dư:', '${viNguoiDung.soDu.toStringAsFixed(0)} đ'),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1565C0),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
-            ),
-          ),
-        ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              shape:
-                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            ),
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Đóng',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ),
         ],
@@ -288,168 +655,283 @@ class _TabTaiKhoanState extends State<TabTaiKhoan> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return RichText(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: label + ' ',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.blueAccent,
-              fontSize: 18,
-            ),
-          ),
-          TextSpan(
-            text: value,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 18,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
   void _showDialogSuaVi(ViNguoiDung viNguoiDung) {
     final _formKey = GlobalKey<FormState>();
 
-    final TextEditingController tenTaiKhoanController =
-        TextEditingController(text: viNguoiDung.tenTaiKhoan);
-    final TextEditingController dienGiaiController =
-        TextEditingController(text: viNguoiDung.dienGiai ?? '');
-    final TextEditingController soDuController =
-        TextEditingController(text: viNguoiDung.soDu.toString());
+    final TextEditingController tenTaiKhoanController = TextEditingController(
+      text: viNguoiDung.tenTaiKhoan,
+    );
+    final TextEditingController dienGiaiController = TextEditingController(
+      text: viNguoiDung.dienGiai ?? '',
+    );
+    final TextEditingController soDuController = TextEditingController(
+      text: currencyFormat.format(viNguoiDung.soDu),
+    );
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Colors.blueAccent, width: 2),
-        ),
-        title: const Text(
-          'Sửa thông tin ví',
-          style: TextStyle(
-            color: Colors.blueAccent,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        content: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: tenTaiKhoanController,
-                  decoration: const InputDecoration(labelText: 'Tên ví'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Tên ví không được để trống';
-                    }
-                    return null;
-                  },
-                ),
-                TextFormField(
-                  controller: dienGiaiController,
-                  decoration: const InputDecoration(labelText: 'Diễn giải'),
-                ),
-                TextFormField(
-                  controller: soDuController,
-                  decoration: const InputDecoration(labelText: 'Số dư'),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Số dư không được để trống';
-                    }
-                    if (double.tryParse(value) == null) {
-                      return 'Số dư phải là số';
-                    }
-                    return null;
-                  },
-                ),
-              ],
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (_formKey.currentState!.validate()) {
-                if (viNguoiDung.maVi == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mã ví không hợp lệ.')),
-                  );
-                  return;
-                }
-
-                bool isTrung = await ViNguoiDungService.kiemTraTenViTrung(
-                  maNguoiDung: viNguoiDung.maNguoiDung,
-                  tenTaiKhoan: tenTaiKhoanController.text.trim(),
-                  maViKhongTinh: viNguoiDung.maVi!,
-                );
-                if (isTrung) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('❌ Tên ví đã tồn tại cho loại tiền này. Vui lòng chọn tên khác hoặc đổi loại tiền.')),
-                  );
-                  return;
-                }
-                // Tiếp tục cập nhật
-                ViNguoiDung viCapNhat = ViNguoiDung(
-                  maNguoiDung: viNguoiDung.maNguoiDung,
-                  maVi: viNguoiDung.maVi,
-                  tenTaiKhoan: tenTaiKhoanController.text.trim(),
-                  dienGiai: dienGiaiController.text.trim(),
-                  soDu: double.parse(soDuController.text.trim()),
-                  maLoaiTien: viNguoiDung.maLoaiTien,
-                );
-                bool success = await ViNguoiDungService.capNhatViNguoiDungFull(
-                  maNguoiDung: viNguoiDung.maNguoiDung.trim(),
-                  maVi: viNguoiDung.maVi!,
-                  tenTaiKhoanCu: viNguoiDung.tenTaiKhoan,  // tên cũ
-                  viNguoiDungMoi: ViNguoiDung(
-                    maNguoiDung: viNguoiDung.maNguoiDung,
-                    maVi: viNguoiDung.maVi,
-                    tenTaiKhoan: tenTaiKhoanController.text.trim(), // tên mới
-                    dienGiai: dienGiaiController.text.trim(),
-                    soDu: double.parse(soDuController.text.trim()),
-                    maLoaiTien: viNguoiDung.maLoaiTien,
+            title: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.edit, color: Colors.white),
+                  SizedBox(width: 12),
+                  Text(
+                    'Sửa thông tin ví',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
-                );
+                ],
+              ),
+            ),
+            content: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildInputField(
+                      controller: tenTaiKhoanController,
+                      label: 'Tên ví',
+                      icon: Icons.account_balance_wallet,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Tên ví không được để trống';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInputField(
+                      controller: dienGiaiController,
+                      label: 'Diễn giải',
+                      icon: Icons.description,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInputField(
+                      controller: soDuController,
+                      label: 'Số dư',
+                      icon: Icons.monetization_on,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [CurrencyInputFormatter()],
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Số dư không được để trống';
+                        }
+                        String cleanValue = value.replaceAll(
+                          RegExp(r'[^0-9]'),
+                          '',
+                        );
+                        if (double.tryParse(cleanValue) == null) {
+                          return 'Số dư phải là số';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.grey[700],
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('Hủy', style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1565C0), Color(0xFF1976D2)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () async {
+                          if (_formKey.currentState!.validate()) {
+                            if (viNguoiDung.maVi == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Mã ví không hợp lệ.'),
+                                ),
+                              );
+                              return;
+                            }
 
-                if (success) {
-                  if (mounted) {
-                    setState(() {
-                      viNguoiDung.tenTaiKhoan = viCapNhat.tenTaiKhoan;
-                      viNguoiDung.dienGiai = viCapNhat.dienGiai;
-                      viNguoiDung.soDu = viCapNhat.soDu;
-                    });
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('✅ Cập nhật ví thành công')),
-                  );
-                  Navigator.pop(context);
-                  if (mounted) _loadDanhSachVi();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('❌ Cập nhật ví thất bại')),
-                  );
-                }
-              }
-            },
-            child: const Text('Lưu'),
+                            bool isTrung =
+                                await ViNguoiDungService.kiemTraTenViTrung(
+                                  maNguoiDung: viNguoiDung.maNguoiDung,
+                                  tenTaiKhoan:
+                                      tenTaiKhoanController.text.trim(),
+                                  maViKhongTinh: viNguoiDung.maVi!,
+                                );
+
+                            if (isTrung) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    '❌ Tên ví đã tồn tại cho loại tiền này. Vui lòng chọn tên khác hoặc đổi loại tiền.',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            // Parse số dư với formatting
+                            String cleanSoDu = soDuController.text.replaceAll(
+                              RegExp(r'[^0-9]'),
+                              '',
+                            );
+
+                            bool success =
+                                await ViNguoiDungService.capNhatViNguoiDungFull(
+                                  maNguoiDung: viNguoiDung.maNguoiDung.trim(),
+                                  maVi: viNguoiDung.maVi!,
+                                  tenTaiKhoanCu: viNguoiDung.tenTaiKhoan,
+                                  viNguoiDungMoi: ViNguoiDung(
+                                    maNguoiDung: viNguoiDung.maNguoiDung,
+                                    maVi: viNguoiDung.maVi,
+                                    tenTaiKhoan:
+                                        tenTaiKhoanController.text.trim(),
+                                    dienGiai: dienGiaiController.text.trim(),
+                                    soDu: double.parse(cleanSoDu),
+                                    maLoaiTien: viNguoiDung.maLoaiTien,
+                                  ),
+                                );
+
+                            if (success) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('✅ Cập nhật ví thành công'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              Navigator.pop(context);
+                              if (mounted) _loadDanhSachVi();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('❌ Cập nhật ví thất bại'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        child: const Text(
+                          'Lưu',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-
-        ],
-      ),
     );
   }
 
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Color(0xFF1565C0)),
+        prefixIcon: Icon(icon, color: const Color(0xFF1565C0)),
+        enabledBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Color(0xFF1565C0)),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Color(0xFF1565C0), width: 2),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.red),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.red, width: 2),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        filled: true,
+        fillColor: const Color(0xFFEAF3FF),
+      ),
+    );
+  }
+}
 
+// Currency Input Formatter
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    // Remove all non-digit characters
+    String digitsOnly = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digitsOnly.isEmpty) {
+      return const TextEditingValue();
+    }
+
+    // Format with comma separator
+    final formatter = NumberFormat('#,###', 'en_US');
+    String formatted = formatter.format(int.parse(digitsOnly));
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
 }
