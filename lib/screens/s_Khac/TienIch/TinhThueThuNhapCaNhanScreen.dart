@@ -27,7 +27,7 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
   int nguoiPhuThuoc = 0;
 
   double trichNopBH = 0;
-  final double giamTruBanThan = 11000000 * 12;
+  final double giamTruBanThan = 11000000; // Đã là tổng năm
   double giamTruNguoiPhuThuoc = 0;
   double thuNhapTinhThue = 0;
   double thuePhaiDong = 0;
@@ -104,7 +104,7 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
         nguoiPhuThuoc = int.parse(_nguoiPhuThuocController.text);
 
         trichNopBH = luongDongBH * 0.105;
-        giamTruNguoiPhuThuoc = nguoiPhuThuoc * (4400000 * 12);
+        giamTruNguoiPhuThuoc = nguoiPhuThuoc * 4400000; // Đã là tổng năm
         double tongGiamTru = trichNopBH + giamTruBanThan + giamTruNguoiPhuThuoc;
         thuNhapTinhThue = max(0, thuNhap - tongGiamTru);
         thuePhaiDong = _tinhThueTNCN(thuNhapTinhThue);
@@ -153,8 +153,8 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
                     children: [
                       _buildCurrencyField(
                         controller: _thuNhapController,
-                        label: 'Thu nhập (VND)',
-                        hint: 'Nhập tổng thu nhập',
+                        label: 'Tổng thu nhập 1 năm (VND)', // Đổi label
+                        hint: 'Nhập tổng thu nhập năm',
                         icon: Icons.attach_money,
                         onChanged: (val) {
                           _formatCurrency(
@@ -169,7 +169,7 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
                       _buildCurrencyField(
                         controller: _luongDongBHController,
                         label: 'Lương đóng BH (VND)',
-                        hint: 'Nhập lương đóng bảo hiểm',
+                        hint: '',
                         icon: Icons.account_balance_wallet,
                         onChanged: (val) {
                           _formatCurrency(
@@ -185,13 +185,16 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
                         controller: _nguoiPhuThuocController,
                         decoration: InputDecoration(
                           labelText: 'Số người phụ thuộc',
-                          hintText: 'Nhập số nguyên',
+                          hintText: '',
                           prefixIcon: const Icon(Icons.people),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         keyboardType: TextInputType.number,
+                        onTap: () {
+                          _nguoiPhuThuocController.clear();
+                        },
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                         ],
@@ -292,7 +295,11 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
         hintText: hint,
         prefixIcon: Icon(icon, color: Colors.blue),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
       ),
+      onTap: () {
+        controller.clear();
+      },
       keyboardType: TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       validator: (value) {
