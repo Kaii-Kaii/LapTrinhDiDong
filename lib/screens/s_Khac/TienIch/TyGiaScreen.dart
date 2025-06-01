@@ -48,7 +48,13 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Tra cứu & Đổi tỷ giá")),
+      backgroundColor: const Color(0xFFe3f2fd), // nền xanh hương nhạt
+      appBar: AppBar(
+        title: const Text("Tra cứu & Đổi tỷ giá"),
+        backgroundColor: const Color(0xFF1976d2), // xanh hương đậm
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
       body: FutureBuilder<List<TyGiaModel>>(
         future: tyGiaFuture,
         builder: (context, snapshot) {
@@ -68,22 +74,51 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
               children: [
                 // Giao diện đổi tiền
                 Card(
+                  elevation: 8,
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    side: const BorderSide(color: Color(0xFF90caf9), width: 2),
+                  ),
                   margin: const EdgeInsets.only(bottom: 24),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       children: [
+                        Text(
+                          "Chuyển đổi tiền tệ",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            color: const Color(0xFF1976d2),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
                         TextField(
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Số tiền',
-                            border: OutlineInputBorder(),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF90caf9),
+                              ),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.attach_money,
+                              color: Color(0xFF1976d2),
+                            ),
+                            filled: true,
+                            fillColor: const Color(0xFFe3f2fd),
                           ),
                           keyboardType: TextInputType.number,
                           onChanged: (value) {
-                            soTien = double.tryParse(value);
+                            setState(() {
+                              soTien = double.tryParse(value);
+                              doiTien();
+                            });
                           },
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         Row(
                           children: [
                             Expanded(
@@ -96,22 +131,31 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
                                             value: e.currency,
                                             child: Row(
                                               children: [
-                                                Image.network(
-                                                  e.flagUrl,
-                                                  width: 32,
-                                                  height: 24,
-                                                  errorBuilder: (
-                                                    context,
-                                                    error,
-                                                    stackTrace,
-                                                  ) {
-                                                    return const Icon(
-                                                      Icons.flag_outlined,
-                                                    );
-                                                  },
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                  child: Image.network(
+                                                    e.flagUrl,
+                                                    width: 32,
+                                                    height: 24,
+                                                    errorBuilder: (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) {
+                                                      return const Icon(
+                                                        Icons.flag_outlined,
+                                                      );
+                                                    },
+                                                  ),
                                                 ),
                                                 const SizedBox(width: 8),
-                                                Text(e.currency),
+                                                Text(
+                                                  e.currency,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -120,16 +164,44 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
                                 onChanged: (value) {
                                   setState(() {
                                     fromCurrency = value;
+                                    doiTien();
                                   });
                                 },
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Từ',
-                                  border: OutlineInputBorder(),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFF90caf9),
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFe3f2fd),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Icon(Icons.arrow_forward),
+                            // Nút hoán đổi
+                            Material(
+                              color: const Color(0xFF1976d2).withOpacity(0.1),
+                              shape: const CircleBorder(),
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.swap_horiz,
+                                  size: 28,
+                                  color: Color(0xFF1976d2),
+                                ),
+                                tooltip: 'Đổi chiều',
+                                onPressed: () {
+                                  setState(() {
+                                    final temp = fromCurrency;
+                                    fromCurrency = toCurrency;
+                                    toCurrency = temp;
+                                    doiTien();
+                                  });
+                                },
+                              ),
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: DropdownButtonFormField<String>(
@@ -141,22 +213,31 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
                                             value: e.currency,
                                             child: Row(
                                               children: [
-                                                Image.network(
-                                                  e.flagUrl,
-                                                  width: 32,
-                                                  height: 24,
-                                                  errorBuilder: (
-                                                    context,
-                                                    error,
-                                                    stackTrace,
-                                                  ) {
-                                                    return const Icon(
-                                                      Icons.flag_outlined,
-                                                    );
-                                                  },
+                                                ClipRRect(
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                  child: Image.network(
+                                                    e.flagUrl,
+                                                    width: 32,
+                                                    height: 24,
+                                                    errorBuilder: (
+                                                      context,
+                                                      error,
+                                                      stackTrace,
+                                                    ) {
+                                                      return const Icon(
+                                                        Icons.flag_outlined,
+                                                      );
+                                                    },
+                                                  ),
                                                 ),
                                                 const SizedBox(width: 8),
-                                                Text(e.currency),
+                                                Text(
+                                                  e.currency,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -165,35 +246,50 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
                                 onChanged: (value) {
                                   setState(() {
                                     toCurrency = value;
+                                    doiTien();
                                   });
                                 },
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Sang',
-                                  border: OutlineInputBorder(),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFF90caf9),
+                                    ),
+                                  ),
+                                  filled: true,
+                                  fillColor: const Color(0xFFe3f2fd),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () {
-                            doiTien();
-                          },
-                          child: const Text('Đổi tiền'),
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          readOnly: true,
-                          decoration: InputDecoration(
-                            labelText: 'Kết quả',
-                            border: const OutlineInputBorder(),
+                        const SizedBox(height: 20),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 18,
+                            horizontal: 12,
                           ),
-                          controller: TextEditingController(
-                            text:
-                                ketQua != null && toCurrency != null
-                                    ? '${ketQua!.toStringAsFixed(2)} $toCurrency'
-                                    : '',
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFbbdefb),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFF1976d2),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              ketQua != null && toCurrency != null
+                                  ? '${ketQua!.toStringAsFixed(2)} $toCurrency'
+                                  : 'Kết quả sẽ hiển thị ở đây',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                                color: Color(0xFF1976d2),
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -203,8 +299,13 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
                 // Danh sách tỷ giá
                 const Text(
                   'Bảng tỷ giá',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Color(0xFF1976d2),
+                  ),
                 ),
+                const SizedBox(height: 8),
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -212,17 +313,38 @@ class _TraCuuTyGiaScreenState extends State<TraCuuTyGiaScreen> {
                   itemBuilder: (context, index) {
                     final item = list[index];
                     return Card(
+                      elevation: 2,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: const BorderSide(color: Color(0xFF90caf9)),
+                      ),
                       child: ListTile(
-                        leading: Image.network(
-                          item.flagUrl,
-                          width: 40,
-                          height: 30,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.flag_outlined);
-                          },
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.network(
+                            item.flagUrl,
+                            width: 40,
+                            height: 30,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.flag_outlined);
+                            },
+                          ),
                         ),
-                        title: Text(item.currency),
-                        trailing: Text(item.rate.toStringAsFixed(2)),
+                        title: Text(
+                          item.currency,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1976d2),
+                          ),
+                        ),
+                        trailing: Text(
+                          item.rate.toStringAsFixed(2),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1976d2),
+                          ),
+                        ),
                       ),
                     );
                   },

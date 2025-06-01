@@ -23,11 +23,20 @@ class DanhSachTraLaiVayScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Lịch trả lãi"),
-        backgroundColor: Colors.indigo,
+        title: const Text(
+          "Lịch trả lãi",
+          style: TextStyle(
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+
+        backgroundColor: Colors.blue[700],
         centerTitle: true,
+        elevation: 0,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -38,11 +47,12 @@ class DanhSachTraLaiVayScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              elevation: 3,
+              elevation: 5,
+              shadowColor: Colors.blue[100],
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 20,
+                  vertical: 20,
+                  horizontal: 24,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -61,9 +71,10 @@ class DanhSachTraLaiVayScreen extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 "Chi tiết các kỳ thanh toán",
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue[800],
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -77,30 +88,44 @@ class DanhSachTraLaiVayScreen extends StatelessWidget {
                   final item = danhSachTraLai[index];
                   final ngayTra = item['ngayTra'] as DateTime;
                   return Card(
-                    color: Colors.white,
-                    elevation: 2,
+                    color: Colors.blue[50],
+                    elevation: 3,
+                    shadowColor: Colors.blue[100],
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: Colors.indigo,
-                        child: Icon(Icons.payments, color: Colors.white),
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.blue[700],
+                        child: const Icon(Icons.payments, color: Colors.white),
                       ),
                       title: Text(
                         "Kỳ ${item['kyHan']} - ${DateFormat('dd/MM/yyyy').format(ngayTra)}",
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
                       ),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 4.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("Gốc: ${formatCurrency(item['tienGoc'])}"),
-                            Text("Lãi: ${formatCurrency(item['tienLai'])}"),
-                            Text("Tổng: ${formatCurrency(item['tongTra'])}"),
+                            Text(
+                              "Gốc: ${formatCurrency(item['tienGoc'])}",
+                              style: const TextStyle(color: Colors.black54),
+                            ),
+                            Text(
+                              "Lãi: ${formatCurrency(item['tienLai'])}",
+                              style: const TextStyle(color: Colors.black54),
+                            ),
+                            Text(
+                              "Tổng: ${formatCurrency(item['tongTra'])}",
+                              style: const TextStyle(color: Colors.black54),
+                            ),
                             Text(
                               "Dư nợ còn lại: ${formatCurrency(item['duNoConLai'])}",
+                              style: const TextStyle(color: Colors.black54),
                             ),
                           ],
                         ),
@@ -124,10 +149,10 @@ class DanhSachTraLaiVayScreen extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.indigo,
+            color: Colors.blue[700],
           ),
         ),
       ],

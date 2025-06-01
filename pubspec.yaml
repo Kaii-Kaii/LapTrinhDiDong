@@ -49,7 +49,8 @@ dependencies:
   file_picker: ^10.1.9
   cloudinary_public: ^0.23.1
   dio: ^5.8.0+1
-
+  material_symbols_icons: ^4.2815.1
+  font_awesome_flutter: ^10.8.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

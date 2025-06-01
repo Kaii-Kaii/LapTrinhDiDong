@@ -9,10 +9,13 @@ import 'dart:io';
 import '../s_TongQuan/TongQuan.dart';
 
 
+import 'package:qltncn/screens/s_HangMuc/HangMucScreen.dart';
+
 class NhapVaoScreen extends StatefulWidget {
   final String maKH;
   final Function? onTransactionAdded;
   const NhapVaoScreen({super.key, required this.maKH, this.onTransactionAdded});
+
 
   @override
   State<NhapVaoScreen> createState() => _NhapVaoScreenState();
@@ -183,6 +186,11 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
               ),
             ],
           ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Nhập thành công!'),
+        backgroundColor: Colors.blue,
+      ),
     );
   }
 
@@ -623,4 +631,36 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     _noteController.dispose();
     super.dispose();
   }
+  void _showCategorySelection(BuildContext context) async {
+    // Chuyển sang trang HangMucScreen và nhận kết quả trả về
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HangMucScreen(maKhachHang: widget.maKH),
+      ),
+    );
+    if (result != null && result is String) {
+      setState(() {
+        selectedCategory = result;
+      });
+    }
+  }
+
+  // List<String> get _incomeCategories => [
+  //   "Lương",
+  //   "Thưởng",
+  //   "Lãi",
+  //   "Lãi tiết kiệm",
+  //   "Khác",
+  // ];
+  // List<String> get _expenseCategories => [
+  //   "Ăn uống",
+  //   "Dịch vụ",
+  //   "Đi lại",
+  //   "Con cái",
+  //   "Trang phục",
+  //   "Sức khỏe",
+  //   "Hiếu hỉ",
+  //   "Khác",
+  // ];
 }
