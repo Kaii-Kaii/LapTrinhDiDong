@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
+import 'package:qltncn/screens/services/cloudinary_service.dart';
 import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
+import '../s_TongQuan/TongQuan.dart';
+
 
 class NhapVaoScreen extends StatefulWidget {
   final String maKH;
@@ -25,6 +30,9 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
   String? _error;
   List<Map<String, dynamic>> _wallets = [];
   List<Map<String, dynamic>> _categories = [];
+  final CloudinaryService _cloudinaryService = CloudinaryService();
+  File? _selectedImage;
+  String? _imageUrl;
 
   @override
   void initState() {
@@ -35,66 +43,35 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
 
   Future<void> _loadWallets() async {
     try {
-      // Get all wallet types first
-      final viResponse = await http.get(
-        Uri.parse('https://10.0.2.2:7283/api/Vi'),
+      final response = await http.get(
+        Uri.parse(
+          'https://10.0.2.2:7283/api/ViNguoiDung/khachhang/${widget.maKH}',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
       );
 
-      print('Vi Response status: ${viResponse.statusCode}');
-      print('Vi Response body: ${viResponse.body}');
+      print('Wallets Response status: ${response.statusCode}');
+      print('Wallets Response body: ${response.body}');
 
-      if (viResponse.statusCode == 200) {
-        final List<dynamic> viData = json.decode(viResponse.body);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
         List<Map<String, dynamic>> wallets = [];
 
-        // For each wallet type, get user's wallet info
-        for (var vi in viData) {
-          try {
-            print('Processing wallet type: ${vi['tenVi']}');
-
-            // Define wallet names based on type
-            String walletName;
-            if (vi['maVi'] == 1) {
-              walletName = 'Ví Tiền Mặt';
-            } else if (vi['maVi'] == 2) {
-              walletName = 'Tài khoản Vietcombank';
-            } else {
-              walletName = 'Ví ${vi['tenVi']}';
-            }
-
-            final encodedWalletName = Uri.encodeComponent(walletName);
-            final url =
-                'https://10.0.2.2:7283/api/ViNguoiDung/${widget.maKH}/${vi['maVi']}/$encodedWalletName';
-            print('Trying URL: $url');
-
-            final response = await http.get(
-              Uri.parse(url),
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              },
-            );
-
-            print('Wallet Response status: ${response.statusCode}');
-            print('Wallet Response body: ${response.body}');
-
-            if (response.statusCode == 200) {
-              final walletData = json.decode(response.body);
-              wallets.add({
-                'maVi': walletData['maVi'],
-                'tenVi': walletData['tenTaiKhoan'],
-                'soDu': walletData['soDu']?.toDouble() ?? 0.0,
-                'loaiVi': walletData['vi']['loaiVi'],
-                'iconVi': walletData['vi']['iconVi'],
-              });
-            }
-          } catch (e) {
-            print('Error loading wallet ${vi['maVi']}: $e');
-          }
+        for (var wallet in data) {
+          final String uniqueId =
+              '${wallet['maVi']}_${wallet['tenTaiKhoan'] ?? 'none'}';
+          wallets.add({
+            'maVi': wallet['maVi'],
+            'tenVi': wallet['vi']['tenVi'],
+            'tenTaiKhoan': wallet['tenTaiKhoan'] ?? 'Không có tên',
+            'soDu': wallet['soDu']?.toDouble() ?? 0.0,
+            'loaiVi': wallet['vi']['loaiVi'],
+            'iconVi': wallet['vi']['iconVi'],
+            'uniqueId': uniqueId,
+          });
         }
 
         print('Final wallets list: $wallets');
@@ -102,7 +79,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
         setState(() {
           _wallets = wallets;
           if (_wallets.isNotEmpty) {
-            _selectedWallet = _wallets[0]['maVi'].toString();
+            _selectedWallet = _wallets[0]['uniqueId'] as String;
             _walletBalance = _wallets[0]['soDu'];
           }
           _isLoading = false;
@@ -110,7 +87,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
       } else {
         setState(() {
           _error =
-              'Lỗi khi tải danh sách ví: ${viResponse.statusCode} - ${viResponse.body}';
+              'Lỗi khi tải danh sách ví: ${response.statusCode} - ${response.body}';
           _isLoading = false;
         });
       }
@@ -175,7 +152,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     if (_selectedWallet != null) {
       try {
         final selectedWallet = _wallets.firstWhere(
-          (w) => w['maVi'].toString() == _selectedWallet,
+          (w) => w['uniqueId'] == _selectedWallet,
           orElse: () => _wallets.first,
         );
 
@@ -193,10 +170,48 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     }
   }
 
+  void _showLogDialog(String message) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final imageFile = await _cloudinaryService.pickImage();
+      if (imageFile == null) return;
+
+      if (!mounted) return;
+      setState(() {
+        _selectedImage = imageFile;
+      });
+    } catch (e) {
+      print('Error in _pickAndUploadImage: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nhập vào')),
+      appBar: AppBar(
+        title: const Text('Nhập vào'),
+        backgroundColor: Colors.blue[700],
+        foregroundColor: Colors.white,
+      ),
       body:
           _isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -211,8 +226,11 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Hiển thị số dư ví
                       Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
@@ -230,9 +248,10 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                                   locale: 'vi_VN',
                                   symbol: '₫',
                                 ).format(_walletBalance),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.blue[700],
                                 ),
                               ),
                             ],
@@ -240,12 +259,18 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // Chọn loại giao dịch
                       DropdownButtonFormField<String>(
                         value: _selectedType,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Loại giao dịch',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
                         ),
                         items: const [
                           DropdownMenuItem(value: 'Thu', child: Text('Thu')),
@@ -258,26 +283,33 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      // Chọn ví
                       DropdownButtonFormField<String>(
                         value: _selectedWallet,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Chọn ví',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
                         ),
                         items:
-                            _wallets.map((wallet) {
-                              return DropdownMenuItem(
-                                value: wallet['maVi'].toString(),
-                                child: Text(wallet['tenVi']),
+                            _wallets.map<DropdownMenuItem<String>>((wallet) {
+                              return DropdownMenuItem<String>(
+                                value: wallet['uniqueId'] as String,
+                                child: Text(
+                                  '${wallet['tenVi']} (${wallet['tenTaiKhoan']})',
+                                ),
                               );
                             }).toList(),
                         onChanged: (value) {
                           setState(() {
                             _selectedWallet = value;
-                            // Cập nhật số dư khi chọn ví khác
                             final selectedWallet = _wallets.firstWhere(
-                              (w) => w['maVi'].toString() == value,
+                              (w) => w['uniqueId'] == value,
                               orElse: () => _wallets.first,
                             );
                             _walletBalance = selectedWallet['soDu'];
@@ -285,12 +317,18 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      // Chọn danh mục
                       DropdownButtonFormField<String>(
                         value: _selectedCategory,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Chọn danh mục',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
                         ),
                         items:
                             _categories.map((category) {
@@ -306,40 +344,89 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      // Nhập số tiền
                       TextFormField(
                         controller: _amountController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Số tiền',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
                         ),
                         keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                        ],
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Vui lòng nhập số tiền';
                           }
                           if (double.tryParse(value) == null) {
-                            return 'Vui lòng nhập số hợp lệ';
+                            return 'Số tiền không hợp lệ';
+                          }
+                          final amount = double.parse(value);
+                          if (amount <= 0) {
+                            return 'Số tiền phải lớn hơn 0';
+                          }
+                          if (_selectedType == 'Chi' &&
+                              amount > _walletBalance) {
+                            return 'Số dư không đủ';
                           }
                           return null;
                         },
                       ),
                       const SizedBox(height: 16),
-                      // Nhập ghi chú
                       TextFormField(
                         controller: _noteController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Ghi chú',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
                         ),
                         maxLines: 3,
                       ),
                       const SizedBox(height: 24),
-                      // Nút lưu
+                      ElevatedButton.icon(
+                        onPressed: _pickAndUploadImage,
+                        icon: const Icon(Icons.image),
+                        label: const Text('Chọn ảnh'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      if (_selectedImage != null) ...[
+                        const SizedBox(height: 16),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            _selectedImage!,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
                       ElevatedButton(
                         onPressed: _saveTransaction,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         child: const Text(
                           'Lưu',
@@ -360,12 +447,33 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
       });
 
       try {
-        // Lấy thông tin ví hiện tại
-        final currentWallet = _wallets.firstWhere(
-          (w) => w['maVi'].toString() == _selectedWallet,
+        final selectedWallet = _wallets.firstWhere(
+          (w) => w['uniqueId'] == _selectedWallet,
         );
 
-        // Tạo giao dịch mới
+        // Upload image first if exists
+        String? imageUrl;
+        if (_selectedImage != null) {
+          try {
+            imageUrl = await _cloudinaryService.uploadImage(_selectedImage!);
+            if (imageUrl == null) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Lỗi khi tải ảnh lên Cloudinary')),
+              );
+              return;
+            }
+          } catch (e) {
+            print('Error uploading image: $e');
+            if (!mounted) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Lỗi khi tải ảnh: $e')));
+            return;
+          }
+        }
+
+        // Create transaction
         final response = await http.post(
           Uri.parse('https://10.0.2.2:7283/api/GiaoDich'),
           headers: {
@@ -374,12 +482,12 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           },
           body: json.encode({
             'maNguoiDung': widget.maKH,
-            'maVi': int.parse(_selectedWallet!),
+            'maVi': selectedWallet['maVi'],
             'maDanhMucNguoiDung': int.parse(_selectedCategory!),
             'soTien': double.parse(_amountController.text),
-            'soTienCu': currentWallet['soDu'],
+            'soTienCu': selectedWallet['soDu'],
             'soTienMoi':
-                currentWallet['soDu'] + double.parse(_amountController.text),
+                selectedWallet['soDu'] + double.parse(_amountController.text),
             'ghiChu': _noteController.text,
             'ngayGiaoDich': DateTime.now().toIso8601String(),
             'loaiGiaoDich': _selectedType,
@@ -392,22 +500,35 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           print('Giao dịch được tạo thành công: ${response.body}');
 
           try {
-            // Lưu lịch sử giao dịch
             await _saveTransactionHistory(
               giaoDichData['maGiaoDich'],
-              currentWallet['soDu'],
-              currentWallet['soDu'] + double.parse(_amountController.text),
+              selectedWallet['soDu'],
+              selectedWallet['soDu'] + double.parse(_amountController.text),
             );
 
-            // Cập nhật lại danh sách ví để lấy số dư mới
+            // Save image URL if exists
+            if (imageUrl != null) {
+              await http.post(
+                Uri.parse('https://10.0.2.2:7283/api/AnhHoaDon'),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                },
+                body: json.encode({
+                  'maGiaoDich': giaoDichData['maGiaoDich'],
+                  'duongDanAnh': imageUrl,
+                }),
+              );
+            }
+
             await _loadWallets();
 
-            // Thông báo cho màn hình lịch sử giao dịch
             if (widget.onTransactionAdded != null) {
               widget.onTransactionAdded!();
             }
 
-            // Hiển thị thông báo thành công
+            transactionUpdateController.add(null);
+
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -416,9 +537,12 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                 ),
               );
 
-              // Xóa form
               _amountController.clear();
               _noteController.clear();
+              setState(() {
+                _selectedImage = null;
+                _imageUrl = null;
+              });
             }
           } catch (e) {
             print('Lỗi khi lưu lịch sử giao dịch: $e');
@@ -467,7 +591,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: jsonEncode({
+        body: json.encode({
           'maGiaoDich': maGiaoDich,
           'hanhDong': 'TaoMoi',
           'soTienCu': soTienCu,

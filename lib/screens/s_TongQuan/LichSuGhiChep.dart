@@ -3,7 +3,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import 'dart:async';
+import 'package:flutter/services.dart';
+import 'TongQuan.dart'; // Import to access transactionUpdateController
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:qltncn/screens/services/cloudinary_service.dart';
 class Transaction {
   final int maLichSu;
   final int maGiaoDich;
@@ -17,6 +22,8 @@ class Transaction {
   final String? tenVi;
   final String? tenDanhMucNguoiDung;
   final double? soTienGiaoDich;
+  final int? maVi;
+  final int? maDanhMucNguoiDung;
 
   Transaction({
     required this.maLichSu,
@@ -31,29 +38,38 @@ class Transaction {
     this.tenVi,
     this.tenDanhMucNguoiDung,
     this.soTienGiaoDich,
+    this.maVi,
+    this.maDanhMucNguoiDung,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
     try {
+      print('Processing transaction JSON:');
+      print('Raw JSON: $json');
+      print('giaoDich data: ${json['giaoDich']}');
+      print('vi data: ${json['giaoDich']?['vi']}');
+      print('danhMucNguoiDung data: ${json['giaoDich']?['danhMucNguoiDung']}');
+
       return Transaction(
         maLichSu: json['maLichSu'] ?? 0,
         maGiaoDich: json['maGiaoDich'] ?? 0,
-        hanhDong: json['hanhDong']?.toString() ?? 'Không xác định',
+        hanhDong: json['hanhDong']?.toString() ?? '',
         soTienCu: json['soTienCu']?.toDouble(),
         soTienMoi: (json['soTienMoi'] ?? 0).toDouble(),
-        thucHienBoi: json['thucHienBoi']?.toString().trim() ?? 'Không xác định',
+        thucHienBoi: json['thucHienBoi']?.toString().trim() ?? '',
         thoiGian:
             json['thoiGian'] != null
                 ? DateTime.parse(json['thoiGian'].toString())
                 : DateTime.now(),
         ghiChu: json['giaoDich']?['ghiChu']?.toString() ?? '',
-        loaiGiaoDich:
-            json['giaoDich']?['loaiGiaoDich']?.toString() ?? 'Không xác định',
+        loaiGiaoDich: json['giaoDich']?['loaiGiaoDich']?.toString() ?? '',
         tenVi: json['giaoDich']?['vi']?['tenVi']?.toString(),
         tenDanhMucNguoiDung:
             json['giaoDich']?['danhMucNguoiDung']?['tenDanhMucNguoiDung']
                 ?.toString(),
         soTienGiaoDich: json['giaoDich']?['soTien']?.toDouble(),
+        maVi: json['giaoDich']?['maVi'],
+        maDanhMucNguoiDung: json['giaoDich']?['maDanhMucNguoiDung'],
       );
     } catch (e) {
       print('Error parsing transaction: $e');
@@ -77,11 +93,64 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
   String? error;
   DateTime selectedDate = DateTime.now();
   bool showAllTransactions = false;
+  Map<int, String> viNames = {};
+  Map<int, String> danhMucNames = {};
+  bool showBalance = false;
+  final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
+  final CloudinaryService _cloudinaryService = CloudinaryService();
 
   @override
   void initState() {
     super.initState();
     fetchTransactions();
+  }
+
+  Future<void> fetchViDetails(int maVi) async {
+    if (viNames.containsKey(maVi)) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://10.0.2.2:7283/api/Vi/$maVi'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          viNames[maVi] = data['tenVi']?.toString() ?? 'Không xác định';
+        });
+      }
+    } catch (e) {
+      print('Error fetching vi details: $e');
+    }
+  }
+
+  Future<void> fetchDanhMucDetails(int maDanhMuc) async {
+    if (danhMucNames.containsKey(maDanhMuc)) return;
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://10.0.2.2:7283/api/DanhMucNguoiDung/$maDanhMuc'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          danhMucNames[maDanhMuc] =
+              data['tenDanhMucNguoiDung']?.toString() ?? 'Không xác định';
+        });
+      }
+    } catch (e) {
+      print('Error fetching danh muc details: $e');
+    }
   }
 
   Future<void> fetchTransactions() async {
@@ -101,13 +170,20 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
         },
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         List<Transaction> transactionList =
             data.map((json) => Transaction.fromJson(json)).toList();
+
+        // Fetch vi and danh muc details for each transaction
+        for (var transaction in transactionList) {
+          if (transaction.maVi != null) {
+            await fetchViDetails(transaction.maVi!);
+          }
+          if (transaction.maDanhMucNguoiDung != null) {
+            await fetchDanhMucDetails(transaction.maDanhMucNguoiDung!);
+          }
+        }
 
         setState(() {
           allTransactions = transactionList;
@@ -133,13 +209,32 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
     // Sort transactions by date in descending order (newest first)
     allTransactions.sort((a, b) => b.thoiGian.compareTo(a.thoiGian));
 
+    // Group transactions by maGiaoDich and keep only the latest update for each
+    Map<int, Transaction> latestTransactions = {};
+    for (var transaction in allTransactions) {
+      if (!latestTransactions.containsKey(transaction.maGiaoDich)) {
+        // For new transactions (hanhDong == 'TaoMoi'), always show them
+        if (transaction.hanhDong == 'TaoMoi') {
+          latestTransactions[transaction.maGiaoDich] = transaction;
+        } else {
+          // For updates, only keep the latest one
+          latestTransactions[transaction.maGiaoDich] = transaction;
+        }
+      }
+    }
+
+    // Convert the map values back to a list
+    List<Transaction> uniqueTransactions = latestTransactions.values.toList();
+    // Sort again by date
+    uniqueTransactions.sort((a, b) => b.thoiGian.compareTo(a.thoiGian));
+
     if (showAllTransactions) {
       // Show all transactions
-      filteredTransactions = allTransactions;
+      filteredTransactions = uniqueTransactions;
     } else {
       // Filter by selected date
       filteredTransactions =
-          allTransactions.where((transaction) {
+          uniqueTransactions.where((transaction) {
             return transaction.thoiGian.year == selectedDate.year &&
                 transaction.thoiGian.month == selectedDate.month &&
                 transaction.thoiGian.day == selectedDate.day;
@@ -164,12 +259,483 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
     }
   }
 
+  Future<void> _showEditDialog(Transaction transaction) async {
+    _amountController.text = transaction.soTienGiaoDich?.toString() ?? '0';
+
+    return showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Chỉnh sửa giao dịch'),
+            content: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Ví: ${viNames[transaction.maVi] ?? 'Đang tải...'}'),
+                  Text(
+                    'Danh mục: ${danhMucNames[transaction.maDanhMucNguoiDung] ?? 'Đang tải...'}',
+                  ),
+                  Text('Loại giao dịch: ${transaction.loaiGiaoDich}'),
+                  Text('Ghi chú: ${transaction.ghiChu}'),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _amountController,
+                    decoration: const InputDecoration(
+                      labelText: 'Số tiền',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                    ],
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Vui lòng nhập số tiền';
+                      }
+                      if (double.tryParse(value) == null) {
+                        return 'Số tiền không hợp lệ';
+                      }
+                      final amount = double.parse(value);
+                      if (amount <= 0) {
+                        return 'Số tiền phải lớn hơn 0';
+                      }
+                      if (transaction.loaiGiaoDich == "Chi") {
+                        final currentBalance = transaction.soTienCu ?? 0;
+                        final oldAmount = transaction.soTienGiaoDich ?? 0;
+                        final difference = amount - oldAmount;
+                        if (difference > 0 && currentBalance < difference) {
+                          return 'Số dư không đủ';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Hủy'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    try {
+                      final newAmount = double.parse(_amountController.text);
+                      final oldAmount = transaction.soTienGiaoDich ?? 0;
+
+                      // Calculate the difference in amount
+                      final amountDifference = newAmount - oldAmount;
+
+                      // Calculate new balances based on transaction type
+                      double newSoTienCu = transaction.soTienCu ?? 0;
+                      double newSoTienMoi;
+
+                      if (transaction.loaiGiaoDich == "Thu") {
+                        // For income, subtract old amount and add new amount
+                        newSoTienMoi = newSoTienCu + amountDifference;
+                      } else {
+                        // For expense, add old amount and subtract new amount
+                        newSoTienMoi = newSoTienCu - amountDifference;
+
+                        // Check if there's enough balance for expense
+                        if (amountDifference > 0 &&
+                            newSoTienCu < amountDifference) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Không đủ số dư để thực hiện giao dịch này',
+                              ),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+                      }
+
+                      final response = await http.put(
+                        Uri.parse(
+                          'https://10.0.2.2:7283/api/GiaoDich/${transaction.maGiaoDich}',
+                        ),
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Accept': 'application/json',
+                        },
+                        body: jsonEncode({
+                          'maGiaoDich': transaction.maGiaoDich,
+                          'maNguoiDung': widget.maKH,
+                          'maVi': transaction.maVi,
+                          'maDanhMucNguoiDung': transaction.maDanhMucNguoiDung,
+                          'soTien': newAmount,
+                          'soTienCu': newSoTienCu,
+                          'soTienMoi': newSoTienMoi,
+                          'ghiChu': transaction.ghiChu,
+                          'ngayGiaoDich':
+                              transaction.thoiGian.toIso8601String(),
+                          'loaiGiaoDich': transaction.loaiGiaoDich,
+                          'maViNhan': null,
+                        }),
+                      );
+
+                      if (response.statusCode == 200) {
+                        // Create new transaction history entry with updated balances
+                        await _createTransactionHistory(
+                          transaction.maGiaoDich,
+                          newSoTienCu,
+                          newSoTienMoi,
+                          'CapNhat',
+                        );
+
+                        // Notify other screens about the transaction update
+                        transactionUpdateController.add(null);
+
+                        // Refresh the transaction list
+                        await fetchTransactions();
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Cập nhật giao dịch thành công'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      } else {
+                        throw Exception(
+                          'Lỗi khi cập nhật giao dịch: ${response.statusCode}',
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Lỗi: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  }
+                },
+                child: const Text('Lưu'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _createTransactionHistory(
+    int maGiaoDich,
+    double soTienCu,
+    double soTienMoi,
+    String hanhDong,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://10.0.2.2:7283/api/LichSuGiaoDich'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'maGiaoDich': maGiaoDich,
+          'hanhDong': hanhDong,
+          'soTienCu': soTienCu,
+          'soTienMoi': soTienMoi,
+          'thucHienBoi': widget.maKH,
+          'thoiGian': DateTime.now().toIso8601String(),
+        }),
+      );
+
+      if (response.statusCode != 201) {
+        print('Lỗi khi tạo lịch sử giao dịch: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        throw Exception(
+          'Lỗi khi tạo lịch sử giao dịch: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Lỗi khi tạo lịch sử giao dịch: $e');
+      throw Exception('Lỗi khi tạo lịch sử giao dịch: $e');
+    }
+  }
+
+  void _showLogDialog(
+    BuildContext context,
+    String message,
+    Transaction transaction,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _viewTransactionImage(int maGiaoDich) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://10.0.2.2:7283/api/AnhHoaDon/giaodich/$maGiaoDich'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('Image API Response status: ${response.statusCode}');
+      print('Image API Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        if (data.isNotEmpty && data[0]['duongDanAnh'] != null) {
+          String imageUrl = data[0]['duongDanAnh'];
+
+          // Remove transformation parameters from the URL
+          if (imageUrl.contains('/w_')) {
+            imageUrl = imageUrl.substring(0, imageUrl.indexOf('/w_'));
+          }
+
+          print('Original URL from API: ${data[0]['duongDanAnh']}');
+          print('Cleaned URL: $imageUrl');
+
+          if (!mounted) return;
+          showDialog(
+            context: context,
+            builder:
+                (context) => Dialog(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        constraints: BoxConstraints(
+                          maxHeight: MediaQuery.of(context).size.height * 0.7,
+                          maxWidth: MediaQuery.of(context).size.width * 0.8,
+                        ),
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress
+                                                .cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            print('Error loading image: $error');
+                            print('Stack trace: $stackTrace');
+                            return Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline,
+                                    color: Colors.red,
+                                    size: 48,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Không thể tải ảnh',
+                                    style: TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Lỗi: $error',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Đóng'),
+                      ),
+                    ],
+                  ),
+                ),
+          );
+        } else {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không tìm thấy ảnh giao dịch')),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error fetching transaction image: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+    }
+  }
+
+  Future<void> _reuploadTransactionImage(Transaction transaction) async {
+    try {
+      // Show dialog to choose image source
+      final source = await showDialog<String>(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Chọn nguồn ảnh'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt),
+                    title: const Text('Chụp ảnh mới'),
+                    onTap: () => Navigator.pop(context, 'camera'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.photo_library),
+                    title: const Text('Chọn từ thư viện'),
+                    onTap: () => Navigator.pop(context, 'gallery'),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.folder),
+                    title: const Text('Chọn từ thư mục'),
+                    onTap: () => Navigator.pop(context, 'folder'),
+                  ),
+                ],
+              ),
+            ),
+      );
+
+      if (source == null) return;
+
+      File? imageFile;
+      final picker = ImagePicker();
+
+      if (source == 'camera') {
+        final pickedFile = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 100,
+        );
+        if (pickedFile != null) {
+          imageFile = File(pickedFile.path);
+        }
+      } else if (source == 'gallery') {
+        final pickedFile = await picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 100,
+        );
+        if (pickedFile != null) {
+          imageFile = File(pickedFile.path);
+        }
+      } else if (source == 'folder') {
+        // For folder selection, we'll use gallery source with special configuration
+        final pickedFile = await picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 100,
+          // This will show the system file picker
+          requestFullMetadata: true,
+          // Allow selecting from any folder
+          maxWidth: null,
+          maxHeight: null,
+        );
+        if (pickedFile != null) {
+          imageFile = File(pickedFile.path);
+          print('Selected file path: ${pickedFile.path}');
+        }
+      }
+
+      if (imageFile == null) return;
+
+      print('Starting image upload process...');
+      final imageUrl = await _cloudinaryService.uploadImage(imageFile);
+      if (imageUrl == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Lỗi khi tải ảnh lên Cloudinary')),
+        );
+        return;
+      }
+
+      print('Image uploaded successfully to Cloudinary: $imageUrl');
+      print(
+        'Updating image URL in database for transaction: ${transaction.maGiaoDich}',
+      );
+
+      // Update image URL in database
+      final response = await http.post(
+        Uri.parse('https://10.0.2.2:7283/api/AnhHoaDon'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'maGiaoDich': transaction.maGiaoDich,
+          'duongDanAnh': imageUrl,
+        }),
+      );
+
+      print('Database update response status: ${response.statusCode}');
+      print('Database update response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cập nhật ảnh thành công'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        print('Error response from database: ${response.body}');
+        throw Exception(
+          'Lỗi khi cập nhật ảnh: ${response.statusCode} - ${response.body}',
+        );
+      }
+    } catch (e) {
+      print('Error reuploading image: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Lịch sử ghi chép'),
+        backgroundColor: Colors.blue[700],
+        foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: Icon(showBalance ? Icons.visibility : Icons.visibility_off),
+            onPressed: () {
+              setState(() {
+                showBalance = !showBalance;
+              });
+            },
+          ),
           IconButton(
             icon: Icon(showAllTransactions ? Icons.calendar_today : Icons.list),
             onPressed: () {
@@ -238,6 +804,7 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
                             vertical: 8,
                           ),
                           child: ListTile(
+                            onTap: () => _showEditDialog(transaction),
                             leading: Icon(
                               transaction.loaiGiaoDich == "Thu"
                                   ? Icons.arrow_downward
@@ -252,7 +819,7 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '${transaction.tenVi ?? "Không xác định"} - ${transaction.tenDanhMucNguoiDung ?? "Không xác định"}',
+                                  'Ví: ${viNames[transaction.maVi] ?? 'Đang tải...'} - Danh mục: ${danhMucNames[transaction.maDanhMucNguoiDung] ?? 'Đang tải...'}',
                                 ),
                                 Text(
                                   'Thời gian: ${DateFormat('dd/MM/yyyy HH:mm').format(transaction.thoiGian)}',
@@ -261,7 +828,7 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
                                     color: Colors.grey[600],
                                   ),
                                 ),
-                                if (transaction.soTienCu != null)
+                                if (transaction.soTienCu != null && showBalance)
                                   Text(
                                     'Số dư cũ: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(transaction.soTienCu)}',
                                     style: TextStyle(
@@ -269,38 +836,86 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
                                       color: Colors.grey[600],
                                     ),
                                   ),
-                                Text(
-                                  'Số dư mới: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(transaction.soTienMoi)}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.blue,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                if (transaction.soTienGiaoDich != null)
+                                if (showBalance)
                                   Text(
-                                    '${transaction.loaiGiaoDich == "Thu" ? "+" : "-"}${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(transaction.soTienGiaoDich)}',
+                                    'Số dư mới: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(transaction.soTienMoi)}',
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      color:
-                                          transaction.loaiGiaoDich == "Thu"
-                                              ? Colors.green
-                                              : Colors.red,
+                                      fontSize: 12,
+                                      color: Colors.blue,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                Text(
-                                  transaction.hanhDong,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
+                              ],
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    if (transaction.soTienGiaoDich != null)
+                                      Text(
+                                        '${transaction.loaiGiaoDich == "Thu" ? "+" : "-"}${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(transaction.soTienGiaoDich)}',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color:
+                                              transaction.loaiGiaoDich == "Thu"
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    Text(
+                                      transaction.hanhDong,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert),
+                                  onSelected: (value) {
+                                    switch (value) {
+                                      case 'edit':
+                                        _showEditDialog(transaction);
+                                        break;
+                                      case 'view_image':
+                                        _viewTransactionImage(
+                                          transaction.maGiaoDich,
+                                        );
+                                        break;
+                                      case 'reupload_image':
+                                        _reuploadTransactionImage(transaction);
+                                        break;
+                                    }
+                                  },
+                                  itemBuilder:
+                                      (context) => [
+                                        const PopupMenuItem(
+                                          value: 'edit',
+                                          child: ListTile(
+                                            leading: Icon(Icons.edit),
+                                            title: Text('Sửa số tiền'),
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'view_image',
+                                          child: ListTile(
+                                            leading: Icon(Icons.image),
+                                            title: Text('Xem ảnh giao dịch'),
+                                          ),
+                                        ),
+                                        const PopupMenuItem(
+                                          value: 'reupload_image',
+                                          child: ListTile(
+                                            leading: Icon(Icons.upload),
+                                            title: Text('Tải lại ảnh'),
+                                          ),
+                                        ),
+                                      ],
                                 ),
                               ],
                             ),
@@ -312,5 +927,11 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
   }
 }
