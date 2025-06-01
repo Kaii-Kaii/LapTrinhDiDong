@@ -27,7 +27,7 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
   int nguoiPhuThuoc = 0;
 
   double trichNopBH = 0;
-  final double giamTruBanThan = 11000000; // Đã là tổng năm
+  final double giamTruBanThan = 11000000;
   double giamTruNguoiPhuThuoc = 0;
   double thuNhapTinhThue = 0;
   double thuePhaiDong = 0;
@@ -104,7 +104,7 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
         nguoiPhuThuoc = int.parse(_nguoiPhuThuocController.text);
 
         trichNopBH = luongDongBH * 0.105;
-        giamTruNguoiPhuThuoc = nguoiPhuThuoc * 4400000; // Đã là tổng năm
+        giamTruNguoiPhuThuoc = nguoiPhuThuoc * (4400000);
         double tongGiamTru = trichNopBH + giamTruBanThan + giamTruNguoiPhuThuoc;
         thuNhapTinhThue = max(0, thuNhap - tongGiamTru);
         thuePhaiDong = _tinhThueTNCN(thuNhapTinhThue);
@@ -153,8 +153,8 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
                     children: [
                       _buildCurrencyField(
                         controller: _thuNhapController,
-                        label: 'Tổng thu nhập 1 năm (VND)', // Đổi label
-                        hint: 'Nhập tổng thu nhập năm',
+                        label: 'Thu nhập hàng tháng (VND)',
+                        hint: '',
                         icon: Icons.attach_money,
                         onChanged: (val) {
                           _formatCurrency(
@@ -261,7 +261,7 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
                       _buildResultRow("Lương đóng BH", luongDongBH),
                       _buildResultRow("Trích nộp BH (10.5%)", trichNopBH),
                       const Divider(),
-                      _buildResultRow("Giảm trừ bản thân", 132000000),
+                      _buildResultRow("Giảm trừ bản thân", 11000000),
                       _buildResultRow(
                         "Giảm trừ người phụ thuộc",
                         giamTruNguoiPhuThuoc,
