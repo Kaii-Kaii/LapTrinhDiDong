@@ -1,6 +1,6 @@
-import 'dart:ffi';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'DanhSachTraLaiVayScreen.dart';
 
 class TinhLaiVayScreen extends StatefulWidget {
@@ -13,14 +13,16 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
   final TextEditingController laiSuatController = TextEditingController();
   final TextEditingController kyHanController = TextEditingController();
   DateTime selectedDate = DateTime.now();
-  String traLaiTheo = "Dư nợ thực tế"; // Giá trị mặc định
+  String traLaiTheo = "Dư nợ thực tế";
+
+  final NumberFormat currencyFormatter = NumberFormat("#,##0", "vi_VN");
 
   @override
   void initState() {
     super.initState();
-    soTienController.text = ""; // Giá trị mặc định
-    laiSuatController.text = ""; // Giá trị mặc định
-    kyHanController.text = ""; // Giá trị mặc định
+    soTienController.text = "";
+    laiSuatController.text = "";
+    kyHanController.text = "";
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -38,7 +40,10 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
   }
 
   void _tinhToan() {
-    final double soTien = double.tryParse(soTienController.text) ?? 0;
+    final String soTienRaw = soTienController.text
+        .replaceAll('.', '')
+        .replaceAll(',', '');
+    final double soTien = double.tryParse(soTienRaw) ?? 0;
     final double laiSuat = double.tryParse(laiSuatController.text) ?? 0;
     final int kyHan = int.tryParse(kyHanController.text) ?? 0;
 
@@ -119,7 +124,6 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
       }
     }
 
-    // Điều hướng đến màn hình danh sách trả lãi
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -143,13 +147,20 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Tính toán khoản vay"),
-        backgroundColor: Colors.blue,
+        title: const Text(
+          "Tính toán khoản vay",
+          style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.blue),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -159,14 +170,30 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
                 child: TextField(
                   controller: soTienController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: "Nhập số tiền",
                     border: InputBorder.none,
+                    hintStyle: TextStyle(color: Colors.blue[200]),
                   ),
                   style: const TextStyle(fontSize: 24, color: Colors.blue),
+                  onChanged: (value) {
+                    String newValue = value
+                        .replaceAll('.', '')
+                        .replaceAll(',', '');
+                    if (newValue.isEmpty) return;
+                    final number = int.tryParse(newValue);
+                    if (number == null) return;
+                    final formatted = currencyFormatter.format(number);
+                    soTienController.value = TextEditingValue(
+                      text: formatted,
+                      selection: TextSelection.collapsed(
+                        offset: formatted.length,
+                      ),
+                    );
+                  },
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // Lãi suất tiền vay
               _buildInputCard(
@@ -177,9 +204,10 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
                       child: TextField(
                         controller: laiSuatController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: "Nhập lãi suất",
                           border: InputBorder.none,
+                          hintStyle: TextStyle(color: Colors.blue[200]),
                         ),
                         style: const TextStyle(
                           fontSize: 24,
@@ -188,11 +216,14 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text("%/năm", style: TextStyle(fontSize: 16)),
+                    const Text(
+                      "%/năm",
+                      style: TextStyle(fontSize: 16, color: Colors.blue),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // Kỳ hạn
               _buildInputCard(
@@ -203,9 +234,10 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
                       child: TextField(
                         controller: kyHanController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: "Nhập kỳ hạn",
                           border: InputBorder.none,
+                          hintStyle: TextStyle(color: Colors.blue[200]),
                         ),
                         style: const TextStyle(
                           fontSize: 24,
@@ -214,18 +246,28 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text("tháng", style: TextStyle(fontSize: 16)),
+                    const Text(
+                      "tháng",
+                      style: TextStyle(fontSize: 16, color: Colors.blue),
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // Trả lãi theo
               _buildInputCard(
                 title: "Trả lãi theo",
-                child: DropdownButton<String>(
+                child: DropdownButtonFormField<String>(
                   value: traLaiTheo,
                   isExpanded: true,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  dropdownColor: Colors.white,
+                  iconEnabledColor: Colors.blue,
+                  style: const TextStyle(color: Colors.blue, fontSize: 18),
                   items:
                       [
                         "Dư nợ thực tế",
@@ -234,7 +276,10 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
                       ].map((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
-                          child: Text(value),
+                          child: Text(
+                            value,
+                            style: const TextStyle(color: Colors.blue),
+                          ),
                         );
                       }).toList(),
                   onChanged: (String? newValue) {
@@ -244,7 +289,7 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // Ngày
               _buildInputCard(
@@ -253,9 +298,11 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
                   leading: const Icon(Icons.calendar_today, color: Colors.blue),
                   title: Text(
                     "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                    style: const TextStyle(fontSize: 16),
+                    style: const TextStyle(fontSize: 18, color: Colors.blue),
                   ),
                   onTap: () => _selectDate(context),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
                 ),
               ),
               const SizedBox(height: 32),
@@ -274,12 +321,19 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
                         });
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey,
+                        backgroundColor: Colors.blue[50],
+                        foregroundColor: Colors.blue,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: Colors.blue),
                         ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text("NHẬP LẠI"),
+                      child: const Text(
+                        "NHẬP LẠI",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -288,11 +342,17 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
                       onPressed: _tinhToan,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text("TÍNH TOÁN"),
+                      child: const Text(
+                        "TÍNH TOÁN",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                 ],
@@ -306,14 +366,26 @@ class _TinhLaiVayScreenState extends State<TinhLaiVayScreen> {
 
   Widget _buildInputCard({required String title, required Widget child}) {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 3,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.blue[50]!, width: 2),
+      ),
+      shadowColor: Colors.blue[50],
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 14.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 16)),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.blue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
             child,
           ],

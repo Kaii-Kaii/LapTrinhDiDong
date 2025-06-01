@@ -131,9 +131,11 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFe3f2fd),
       appBar: AppBar(
         title: const Text("Chọn chế độ chia tiền"),
-        backgroundColor: Colors.teal,
+        backgroundColor: const Color(0xFF1976d2),
+        foregroundColor: Colors.white,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _reset),
           IconButton(
@@ -143,17 +145,72 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                 context: context,
                 builder:
                     (context) => AlertDialog(
-                      title: const Text("Kết quả chia tiền"),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: List.generate(widget.soThanhVien, (i) {
-                          return Text(
-                            "Thành viên ${i + 1}: ${chiaTien[i].toStringAsFixed(2)} đ (${phanTram[i].toStringAsFixed(2)}%)",
-                          );
-                        }),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                        side: const BorderSide(
+                          color: Color(0xFF1976d2),
+                          width: 2,
+                        ),
+                      ),
+                      backgroundColor: Colors.white,
+                      title: Row(
+                        children: const [
+                          Icon(Icons.check_circle, color: Color(0xFF1976d2)),
+                          SizedBox(width: 8),
+                          Text(
+                            "Kết quả chia tiền",
+                            style: TextStyle(
+                              color: Color(0xFF1976d2),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      content: SizedBox(
+                        width: 300,
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: widget.soThanhVien,
+                          separatorBuilder: (_, __) => const Divider(height: 8),
+                          itemBuilder: (context, i) {
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: const Color(0xFF1976d2),
+                                child: Text(
+                                  "${i + 1}",
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              title: Text(
+                                "Thành viên ${i + 1}",
+                                style: const TextStyle(
+                                  color: Color(0xFF1976d2),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                "${chiaTien[i].toStringAsFixed(2)} đ  (${phanTram[i].toStringAsFixed(2)}%)",
+                                style: const TextStyle(
+                                  color: Color(0xFF1976d2),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
                       actions: [
                         TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: const Color(0xFF1976d2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 10,
+                            ),
+                          ),
                           onPressed: () => Navigator.pop(context),
                           child: const Text("Đóng"),
                         ),
@@ -170,14 +227,18 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
           children: [
             Text(
               "Tổng tiền: ${widget.tongTien.toStringAsFixed(0)} đ",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1976d2),
+              ),
             ),
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Wrap(
-                spacing: 8, // Khoảng cách giữa các nút theo chiều ngang
-                runSpacing: 8, // Khoảng cách giữa các hàng
+                spacing: 8,
+                runSpacing: 8,
                 alignment: WrapAlignment.center,
                 children: [
                   ElevatedButton(
@@ -190,8 +251,19 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                           _cheDoChia == "Chia theo %"
-                              ? Colors.teal
-                              : Colors.grey,
+                              ? const Color(0xFF1976d2)
+                              : Colors.white,
+                      foregroundColor:
+                          _cheDoChia == "Chia theo %"
+                              ? Colors.white
+                              : const Color(0xFF1976d2),
+                      side: const BorderSide(
+                        color: Color(0xFF90caf9),
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
@@ -211,7 +283,20 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          _cheDoChia == "Chia đều" ? Colors.teal : Colors.grey,
+                          _cheDoChia == "Chia đều"
+                              ? const Color(0xFF1976d2)
+                              : Colors.white,
+                      foregroundColor:
+                          _cheDoChia == "Chia đều"
+                              ? Colors.white
+                              : const Color(0xFF1976d2),
+                      side: const BorderSide(
+                        color: Color(0xFF90caf9),
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
@@ -232,8 +317,19 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                           _cheDoChia == "Chia theo số tiền"
-                              ? Colors.teal
-                              : Colors.grey,
+                              ? const Color(0xFF1976d2)
+                              : Colors.white,
+                      foregroundColor:
+                          _cheDoChia == "Chia theo số tiền"
+                              ? Colors.white
+                              : const Color(0xFF1976d2),
+                      side: const BorderSide(
+                        color: Color(0xFF90caf9),
+                        width: 2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
@@ -258,7 +354,12 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                         vertical: 6,
                         horizontal: 4,
                       ),
-                      elevation: 2,
+                      elevation: 3,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: const BorderSide(color: Color(0xFF90caf9)),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           vertical: 12,
@@ -268,8 +369,11 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             CircleAvatar(
-                              backgroundColor: Colors.teal,
-                              child: Text((i + 1).toString()),
+                              backgroundColor: const Color(0xFF1976d2),
+                              child: Text(
+                                (i + 1).toString(),
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -279,13 +383,17 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                                 children: [
                                   Text(
                                     "Thành viên ${i + 1}",
-                                    style: const TextStyle(fontSize: 16),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Color(0xFF1976d2),
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     "${chiaTien[i].toStringAsFixed(2)} đ",
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1976d2),
                                     ),
                                   ),
                                 ],
@@ -300,14 +408,28 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                                     const TextInputType.numberWithOptions(
                                       decimal: true,
                                     ),
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: "%",
-                                  border: OutlineInputBorder(),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFF90caf9),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFF1976d2),
+                                      width: 2,
+                                    ),
+                                  ),
                                   isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 6,
                                     vertical: 8,
                                   ),
+                                  fillColor: const Color(0xFFe3f2fd),
+                                  filled: true,
                                 ),
                                 onTap: () {
                                   phanTramControllers[i]
@@ -343,14 +465,22 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                         vertical: 6,
                         horizontal: 4,
                       ),
-                      elevation: 2,
+                      elevation: 3,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: const BorderSide(color: Color(0xFF90caf9)),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
                             CircleAvatar(
-                              backgroundColor: Colors.teal,
-                              child: Text((i + 1).toString()),
+                              backgroundColor: const Color(0xFF1976d2),
+                              child: Text(
+                                (i + 1).toString(),
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -359,7 +489,10 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                                 children: [
                                   Text(
                                     "Thành viên ${i + 1}",
-                                    style: const TextStyle(fontSize: 16),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Color(0xFF1976d2),
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
@@ -367,6 +500,7 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1976d2),
                                     ),
                                   ),
                                 ],
@@ -389,14 +523,22 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                         vertical: 6,
                         horizontal: 4,
                       ),
-                      elevation: 2,
+                      elevation: 3,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: const BorderSide(color: Color(0xFF90caf9)),
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
                         child: Row(
                           children: [
                             CircleAvatar(
-                              backgroundColor: Colors.teal,
-                              child: Text((i + 1).toString()),
+                              backgroundColor: const Color(0xFF1976d2),
+                              child: Text(
+                                (i + 1).toString(),
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -405,13 +547,17 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                                 children: [
                                   Text(
                                     "Thành viên ${i + 1}",
-                                    style: const TextStyle(fontSize: 16),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Color(0xFF1976d2),
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     "${phanTram[i].toStringAsFixed(2)}%",
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1976d2),
                                     ),
                                   ),
                                 ],
@@ -425,14 +571,28 @@ class _CachChiaScreenState extends State<CachChiaScreen> {
                                     const TextInputType.numberWithOptions(
                                       decimal: true,
                                     ),
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: "Số tiền",
-                                  border: OutlineInputBorder(),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFF90caf9),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: const BorderSide(
+                                      color: Color(0xFF1976d2),
+                                      width: 2,
+                                    ),
+                                  ),
                                   isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
+                                  contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 8,
                                     vertical: 8,
                                   ),
+                                  fillColor: const Color(0xFFe3f2fd),
+                                  filled: true,
                                 ),
                                 onTap: () {
                                   tienControllers[i].selection = TextSelection(
