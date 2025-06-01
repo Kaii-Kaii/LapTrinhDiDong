@@ -11,7 +11,14 @@ import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung_service.dart';
 import 'package:qltncn/widget/vi_utils.dart';
 import 'package:qltncn/model/Vi/Vi/Vi.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:async';
 
+// Add a global StreamController to handle transaction updates
+final StreamController<void> transactionUpdateController =
+    StreamController<void>.broadcast();
 
 class TongQuanScreen extends StatefulWidget {
   final String userName;
@@ -22,7 +29,8 @@ class TongQuanScreen extends StatefulWidget {
   const TongQuanScreen({super.key, required this.userName, required this.maKH});
 }
 
-class _TongQuanScreenState extends State<TongQuanScreen> {
+class _TongQuanScreenState extends State<TongQuanScreen>
+    with WidgetsBindingObserver {
   //final DatabaseHelper _dbHelper = DatabaseHelper();
   Map<String, double> incomeData = {};
   Map<String, double> expenseData = {};
@@ -38,6 +46,13 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
   late String maKH;
   String? hoTenKhachHang;
 
+  final FocusNode _focusNode = FocusNode();
+
+  DateTime startDate = DateTime.now();
+  DateTime endDate = DateTime.now();
+
+  StreamSubscription? _transactionUpdateSubscription;
+
   Future<void> _loadDanhSachVi() async {
     final data = await ViNguoiDungService.fetchViNguoiDungByMaKhachHang(
       widget.maKH,
@@ -46,9 +61,12 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
       danhSachVi = data;
     });
   }
+
   Future<void> _loadKhachHang() async {
     final khachHang = await KhachHangService.fetchKhachHangByMaKH(widget.maKH);
-    if (khachHang != null && khachHang.hoTen != null && khachHang.hoTen!.isNotEmpty) {
+    if (khachHang != null &&
+        khachHang.hoTen != null &&
+        khachHang.hoTen!.isNotEmpty) {
       setState(() {
         hoTenKhachHang = khachHang.hoTen;
       });
@@ -69,7 +87,6 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('isBalanceVisible', value);
   }
-
 
   List<ViNguoiDung> danhSachVi = [];
   double get tongSoDu {
@@ -117,32 +134,189 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
   @override
   void initState() {
     super.initState();
-    userName = widget.userName; // Gán tên người dùng từ widget
-    maKH = widget.maKH; // Gán maKH từ widget
-    
-    _loadDanhSachVi(); // Gọi phương thức để tải dữ liệu
+    userName = widget.userName;
+    maKH = widget.maKH;
+
+    // Set initial date range to current month
+    final now = DateTime.now();
+    startDate = DateTime(now.year, now.month, 1);
+    endDate = DateTime(now.year, now.month + 1, 0);
+
+    _loadDanhSachVi();
     _loadKhachHang();
     _loadBalanceVisibility();
+    _loadTransactionData();
+
+    // Add focus listener
+    _focusNode.addListener(_onFocusChange);
+
+    // Listen for transaction updates
+    _transactionUpdateSubscription = transactionUpdateController.stream.listen((
+      _,
+    ) {
+      _refreshData();
+    });
   }
 
-  // Future<void> _loadData() async {
-  //   Map<String, double> income = await _dbHelper.getIncomeByCategory(
-  //     filter: selectedFilter,
-  //     date: selectedDate,
-  //   );
-  //   Map<String, double> expense = await _dbHelper.getExpenseByCategory(
-  //     filter: selectedFilter,
-  //     date: selectedDate,
-  //   );
+  void _onFocusChange() {
+    if (_focusNode.hasFocus) {
+      // Refresh data when screen comes into focus
+      _loadDanhSachVi();
+      _loadKhachHang();
+    }
+  }
 
-  //   setState(() {
-  //     incomeData = income;
-  //     expenseData = expense;
-  //     totalIncome = income.values.fold(0, (sum, value) => sum + value);
-  //     totalExpense = expense.values.fold(0, (sum, value) => sum + value);
-  //   });
-  // }
-  
+  Future<void> _refreshData() async {
+    await _loadDanhSachVi();
+    await _loadTransactionData();
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    _transactionUpdateSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadTransactionData() async {
+    try {
+      // Format dates for API with proper padding for month and day
+      // Set end date to end of day (23:59:59)
+      String formattedStartDate =
+          "${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}T00:00:00";
+      String formattedEndDate =
+          "${endDate.year}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')}T23:59:59";
+
+      print(
+        'Fetching transactions from $formattedStartDate to $formattedEndDate',
+      ); // Debug log
+
+      final response = await http.get(
+        Uri.parse(
+          'https://10.0.2.2:7283/api/LichSuGiaoDich/nguoidung/$maKH/thoigian?startDate=$formattedStartDate&endDate=$formattedEndDate',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        print('Received ${data.length} transactions'); // Debug log
+
+        // Reset totals
+        double totalThu = 0;
+        double totalChi = 0;
+
+        // Group transactions by maGiaoDich to get latest update for each
+        Map<String, dynamic> latestTransactions = {};
+
+        // First pass: collect all transactions
+        for (var transaction in data) {
+          if (transaction['giaoDich'] != null) {
+            final giaoDich = transaction['giaoDich'];
+            final maGiaoDich = giaoDich['maGiaoDich']?.toString();
+            final hanhDong = transaction['hanhDong']?.toString();
+            final thoiGian = transaction['thoiGian']?.toString();
+
+            print(
+              'Processing transaction: maGiaoDich=$maGiaoDich, hanhDong=$hanhDong, thoiGian=$thoiGian',
+            ); // Debug log
+
+            if (maGiaoDich != null) {
+              // For new transactions, always keep them
+              if (hanhDong == 'TaoMoi') {
+                latestTransactions[maGiaoDich] = transaction;
+                print('Added new transaction: $maGiaoDich'); // Debug log
+              }
+              // For updates, only keep the latest one
+              else if (hanhDong == 'CapNhat') {
+                final currentDate = DateTime.parse(thoiGian ?? '');
+                final existingDate =
+                    latestTransactions[maGiaoDich] != null
+                        ? DateTime.parse(
+                          latestTransactions[maGiaoDich]['thoiGian'] ?? '',
+                        )
+                        : DateTime(1900);
+
+                if (currentDate.isAfter(existingDate)) {
+                  latestTransactions[maGiaoDich] = transaction;
+                  print(
+                    'Updated transaction: $maGiaoDich with date ${currentDate.toString()}',
+                  ); // Debug log
+                }
+              }
+            }
+          }
+        }
+
+        print(
+          'Filtered to ${latestTransactions.length} transactions',
+        ); // Debug log
+
+        // Second pass: calculate totals from filtered transactions
+        for (var transaction in latestTransactions.values) {
+          if (transaction['giaoDich'] != null) {
+            final giaoDich = transaction['giaoDich'];
+            final soTien = giaoDich['soTien']?.toDouble() ?? 0;
+            final loaiGiaoDich = giaoDich['loaiGiaoDich']?.toString() ?? '';
+
+            if (loaiGiaoDich == 'Thu') {
+              totalThu += soTien;
+            } else if (loaiGiaoDich == 'Chi') {
+              totalChi += soTien;
+            }
+          }
+        }
+
+        setState(() {
+          totalIncome = totalThu;
+          totalExpense = totalChi;
+        });
+      } else {
+        print('Error loading transaction data: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error loading transaction data: $e');
+    }
+  }
+
+  void _updateDateRange(String timePeriod) {
+    final now = DateTime.now();
+    setState(() {
+      selectedTimePeriod = timePeriod;
+      switch (timePeriod) {
+        case 'Hôm nay':
+          startDate = DateTime(now.year, now.month, now.day);
+          endDate = startDate;
+          break;
+        case 'Tuần này':
+          startDate = now.subtract(Duration(days: now.weekday - 1));
+          endDate = startDate.add(Duration(days: 6));
+          break;
+        case 'Tháng này':
+          startDate = DateTime(now.year, now.month, 1);
+          endDate = DateTime(now.year, now.month + 1, 0);
+          break;
+        case 'Quý này':
+          final quarter = ((now.month - 1) ~/ 3) * 3 + 1;
+          startDate = DateTime(now.year, quarter, 1);
+          endDate = DateTime(now.year, quarter + 3, 0);
+          break;
+        case 'Năm nay':
+          startDate = DateTime(now.year, 1, 1);
+          endDate = DateTime(now.year, 12, 31);
+          break;
+      }
+    });
+    print(
+      'Date range updated: ${startDate.toString()} to ${endDate.toString()}',
+    ); // Debug log
+    _loadTransactionData();
+  }
+
   void _selectDate(BuildContext context) async {
     DateTime? picked = await showDatePicker(
       context: context,
@@ -248,103 +422,18 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
   @override
   Widget build(BuildContext context) {
     double currentBalance = totalIncome - totalExpense;
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header Section
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 1,
-                    blurRadius: 5,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Chào ${hoTenKhachHang ?? userName}!",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.refresh, color: Colors.blue),
-                            onPressed: () {
-                              // TODO: Implement reload functionality
-                            },
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.notifications, color: Colors.blue),
-                            onPressed: () {
-                              // TODO: Implement notification functionality
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      DropdownButton<String>(
-                        value: selectedFilter,
-                        items:
-                            ["Ngày", "Tháng", "Năm"]
-                                .map(
-                                  (e) => DropdownMenuItem(
-                                    value: e,
-                                    child: Text(e),
-                                  ),
-                                )
-                                .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedFilter = value!;
-                          });
-                        },
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        onPressed: () => _selectDate(context),
-                        child: Text("Chọn ${selectedFilter.toLowerCase()}"),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Balance Card
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                padding: EdgeInsets.all(20),
+    return Focus(
+      focusNode: _focusNode,
+      child: Scaffold(
+        backgroundColor: Colors.grey[100],
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Header Section
+              Container(
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.grey.withOpacity(0.1),
@@ -355,106 +444,202 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                   ],
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Số dư hiện tại" + (isBalanceVisible ? "" : " (Ẩn)"),
+                          "Chào ${hoTenKhachHang ?? userName}!",
                           style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            isBalanceVisible
-                                ? Icons.visibility
-                                : Icons.visibility_off,
-                            color: Colors.blue,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              isBalanceVisible = !isBalanceVisible;
-                            });
-                            _saveBalanceVisibility(isBalanceVisible); // Lưu trạng thái mới
-                          },
                         ),
 
+                        Row(
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.refresh, color: Colors.blue),
+                              onPressed: () {
+                                // TODO: Implement reload functionality
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.notifications,
+                                color: Colors.blue,
+                              ),
+                              onPressed: () {
+                                // TODO: Implement notification functionality
+                              },
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                    SizedBox(height: 8),
-                    Text(
-                      isBalanceVisible ? "${formattedTongSoDu} đ" : "****** đ",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: currentBalance >= 0 ? Colors.green : Colors.red,
-                      ),
+                    SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        DropdownButton<String>(
+                          value: selectedFilter,
+                          items:
+                              ["Ngày", "Tháng", "Năm"]
+                                  .map(
+                                    (e) => DropdownMenuItem(
+                                      value: e,
+                                      child: Text(e),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedFilter = value!;
+                            });
+                          },
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: () => _selectDate(context),
+                          child: Text("Chọn ${selectedFilter.toLowerCase()}"),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ),
 
-            // Charts Section
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.all(16),
-                children: [
-                  if (cardVisibility['Tình hình thu chi']!) ...[
-                    _buildChartCard("Tình hình thu chi", incomeData),
-                    SizedBox(height: 16),
-                  ],
-                  if (cardVisibility['Hạn mức chi']!) ...[
-                    _buildChartCard("Hạn mức chi", expenseData),
-                    SizedBox(height: 16),
-                  ],
-                  if (cardVisibility['Du lịch']!) ...[
-                    _buildTravelCard(),
-                    SizedBox(height: 16),
-                  ],
-                  if (cardVisibility['Tra cứu tỷ giá']!) ...[
-                    _buildExchangeRateCard(),
-                    SizedBox(height: 16),
-                  ],
-                  if (cardVisibility['Tiện ích khác']!) ...[
-                    _buildUtilitiesCard(),
-                    SizedBox(height: 16),
-                  ],
-                  if (cardVisibility['Phân tích chi tiêu']!) ...[
-                    _buildExpenseAnalysisCard(),
-                    SizedBox(height: 16),
-                  ],
-                  if (cardVisibility['Sổ tiết kiệm']!) ...[
-                    _buildSavingsCard(),
-                    SizedBox(height: 16),
-                  ],
-                  if (cardVisibility['Theo dõi vay nợ']!) ...[
-                    _buildLoanTrackingCard(),
-                    SizedBox(height: 16),
-                  ],
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton.icon(
-                onPressed: _showPersonalizationDialog,
-                icon: Icon(Icons.settings),
-                label: Text('Cá nhân hoá giao diện tổng quan'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  minimumSize: Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              // Balance Card
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 5,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Số dư hiện tại" +
+                                (isBalanceVisible ? "" : " (Ẩn)"),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              isBalanceVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.blue,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                isBalanceVisible = !isBalanceVisible;
+                              });
+                              _saveBalanceVisibility(
+                                isBalanceVisible,
+                              ); // Lưu trạng thái mới
+                            },
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        isBalanceVisible
+                            ? "${formattedTongSoDu} đ"
+                            : "****** đ",
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              currentBalance >= 0 ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
+
+              // Charts Section
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.all(16),
+                  children: [
+                    if (cardVisibility['Tình hình thu chi']!) ...[
+                      _buildChartCard("Tình hình thu chi", incomeData),
+                      SizedBox(height: 16),
+                    ],
+                    if (cardVisibility['Hạn mức chi']!) ...[
+                      _buildChartCard("Hạn mức chi", expenseData),
+                      SizedBox(height: 16),
+                    ],
+                    if (cardVisibility['Du lịch']!) ...[
+                      _buildTravelCard(),
+                      SizedBox(height: 16),
+                    ],
+                    if (cardVisibility['Tra cứu tỷ giá']!) ...[
+                      _buildExchangeRateCard(),
+                      SizedBox(height: 16),
+                    ],
+                    if (cardVisibility['Tiện ích khác']!) ...[
+                      _buildUtilitiesCard(),
+                      SizedBox(height: 16),
+                    ],
+                    if (cardVisibility['Phân tích chi tiêu']!) ...[
+                      _buildExpenseAnalysisCard(),
+                      SizedBox(height: 16),
+                    ],
+                    if (cardVisibility['Sổ tiết kiệm']!) ...[
+                      _buildSavingsCard(),
+                      SizedBox(height: 16),
+                    ],
+                    if (cardVisibility['Theo dõi vay nợ']!) ...[
+                      _buildLoanTrackingCard(),
+                      SizedBox(height: 16),
+                    ],
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton.icon(
+                  onPressed: _showPersonalizationDialog,
+                  icon: Icon(Icons.settings),
+                  label: Text('Cá nhân hoá giao diện tổng quan'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    minimumSize: Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -494,7 +679,9 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => LichSuGhiChep()),
+                      MaterialPageRoute(
+                        builder: (context) => LichSuGhiChep(maKH: widget.maKH),
+                      ),
                     );
                   },
                   icon: Icon(Icons.history, size: 18),
@@ -509,7 +696,7 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                 ),
             ],
           ),
-          if (title == "Tình hình thu chi")
+          if (title == "Tình hình thu chi") ...[
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Container(
@@ -548,61 +735,151 @@ class _TongQuanScreenState extends State<TongQuanScreen> {
                         }).toList(),
                     onChanged: (String? newValue) {
                       if (newValue != null) {
-                        setState(() {
-                          selectedTimePeriod = newValue;
-                        });
+                        _updateDateRange(newValue);
                       }
                     },
                   ),
                 ),
               ),
             ),
-          SizedBox(height: 16),
-          if (data.isEmpty)
+            SizedBox(height: 16),
+            // Add income and expense summary cards
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSummaryCard(
+                    title: "Thu",
+                    amount: totalIncome,
+                    icon: Icons.arrow_downward,
+                    color: Colors.green,
+                  ),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: _buildSummaryCard(
+                    title: "Chi",
+                    amount: totalExpense,
+                    icon: Icons.arrow_upward,
+                    color: Colors.red,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            // Add balance card
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Số dư",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                  Text(
+                    "${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(totalIncome - totalExpense)}",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          (totalIncome - totalExpense) >= 0
+                              ? Colors.green
+                              : Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (data.isEmpty && title == "Hạn mức chi")
             Container(
               height: 200,
               alignment: Alignment.center,
-              child:
-                  title == "Hạn mức chi"
-                      ? Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Tháng này bạn chưa có ghi chép nào",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          SizedBox(height: 16),
-                          ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => ThemHanMucChi(),
-                                ),
-                              );
-                            },
-                            icon: Icon(Icons.add),
-                            label: Text("Thêm hạn mức chi"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                      : Text(
-                        "Tháng này bạn chưa có ghi chép nào",
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Bạn chưa có hạn mức chi nào",
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ThemHanMucChi(),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.add),
+                    label: Text("Thêm hạn mức chi"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
+                    ),
+                  ),
+                ],
+              ),
             )
-          else
+          else if (data.isNotEmpty)
             SizedBox(height: 200, child: PieChart(_generatePieChartData(data))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required String title,
+    required double amount,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text(
+            NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(amount),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
         ],
       ),
     );

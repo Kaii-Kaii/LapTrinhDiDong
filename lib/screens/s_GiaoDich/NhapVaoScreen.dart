@@ -1,191 +1,636 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'package:qltncn/screens/services/cloudinary_service.dart';
+import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
+import '../s_TongQuan/TongQuan.dart';
+
 
 import 'package:qltncn/screens/s_HangMuc/HangMucScreen.dart';
 
 class NhapVaoScreen extends StatefulWidget {
   final String maKH;
-  const NhapVaoScreen({Key? key, required this.maKH}) : super(key: key);
+  final Function? onTransactionAdded;
+  const NhapVaoScreen({super.key, required this.maKH, this.onTransactionAdded});
+
 
   @override
   State<NhapVaoScreen> createState() => _NhapVaoScreenState();
 }
 
 class _NhapVaoScreenState extends State<NhapVaoScreen> {
-  DateTime selectedDate = DateTime.now();
-  final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _noteController = TextEditingController();
-  //final DatabaseHelper _dbHelper = DatabaseHelper();
-  bool isTienThu = false;
-  String selectedCategory = "Khác";
+  final _formKey = GlobalKey<FormState>();
+  final _amountController = TextEditingController();
+  final _noteController = TextEditingController();
+  String _selectedType = 'Thu';
+  String? _selectedWallet;
+  String? _selectedCategory;
+  double _walletBalance = 0.0;
+  bool _isLoading = true;
+  String? _error;
+  List<Map<String, dynamic>> _wallets = [];
+  List<Map<String, dynamic>> _categories = [];
+  final CloudinaryService _cloudinaryService = CloudinaryService();
+  File? _selectedImage;
+  String? _imageUrl;
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _loadWallets();
+    _loadCategories();
+  }
 
-    if (pickedDate != null) {
-      final TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(selectedDate),
+  Future<void> _loadWallets() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://10.0.2.2:7283/api/ViNguoiDung/khachhang/${widget.maKH}',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
       );
 
-      if (pickedTime != null) {
+      print('Wallets Response status: ${response.statusCode}');
+      print('Wallets Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        List<Map<String, dynamic>> wallets = [];
+
+        for (var wallet in data) {
+          final String uniqueId =
+              '${wallet['maVi']}_${wallet['tenTaiKhoan'] ?? 'none'}';
+          wallets.add({
+            'maVi': wallet['maVi'],
+            'tenVi': wallet['vi']['tenVi'],
+            'tenTaiKhoan': wallet['tenTaiKhoan'] ?? 'Không có tên',
+            'soDu': wallet['soDu']?.toDouble() ?? 0.0,
+            'loaiVi': wallet['vi']['loaiVi'],
+            'iconVi': wallet['vi']['iconVi'],
+            'uniqueId': uniqueId,
+          });
+        }
+
+        print('Final wallets list: $wallets');
+
         setState(() {
-          selectedDate = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
-          );
+          _wallets = wallets;
+          if (_wallets.isNotEmpty) {
+            _selectedWallet = _wallets[0]['uniqueId'] as String;
+            _walletBalance = _wallets[0]['soDu'];
+          }
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error =
+              'Lỗi khi tải danh sách ví: ${response.statusCode} - ${response.body}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading wallets: $e');
+      setState(() {
+        _error = 'Lỗi kết nối: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://10.0.2.2:7283/api/DanhMucNguoiDung/user/${widget.maKH}',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+
+      print('Categories Response status: ${response.statusCode}');
+      print('Categories Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          _categories =
+              data
+                  .map(
+                    (category) => {
+                      'maDanhMuc': category['maDanhMucNguoiDung'],
+                      'tenDanhMuc': category['tenDanhMucNguoiDung'],
+                      'toiDa': category['toiDa']?.toDouble() ?? 0.0,
+                      'soTienHienTai':
+                          category['soTienHienTai']?.toDouble() ?? 0.0,
+                    },
+                  )
+                  .toList();
+          if (_categories.isNotEmpty) {
+            _selectedCategory = _categories[0]['maDanhMuc'].toString();
+          }
+        });
+      } else {
+        setState(() {
+          _error =
+              'Lỗi khi tải danh mục: ${response.statusCode} - ${response.body}';
+        });
+      }
+    } catch (e) {
+      print('Error loading categories: $e');
+      setState(() {
+        _error = 'Lỗi kết nối: $e';
+      });
+    }
+  }
+
+  Future<void> _loadWalletBalance() async {
+    if (_selectedWallet != null) {
+      try {
+        final selectedWallet = _wallets.firstWhere(
+          (w) => w['uniqueId'] == _selectedWallet,
+          orElse: () => _wallets.first,
+        );
+
+        setState(() {
+          _walletBalance = selectedWallet['soDu'];
+          _isLoading = false;
+        });
+      } catch (e) {
+        print('Error loading wallet balance: $e');
+        setState(() {
+          _error = 'Lỗi khi tải số dư: $e';
+          _isLoading = false;
         });
       }
     }
   }
 
-  Future<void> _saveTransaction() async {
-    String dateString = DateFormat('yyyy-MM-dd HH:mm').format(selectedDate);
-    String note = _noteController.text.trim();
-    double? amount = double.tryParse(_amountController.text.trim());
-
-    if (amount == null || amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập số tiền hợp lệ')),
-      );
-      return;
-    }
-
-    if (!isTienThu) {
-      amount = -amount;
-    }
-
+  void _showLogDialog(String message) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Nhập thành công!'),
         backgroundColor: Colors.blue,
       ),
     );
+  }
 
-    setState(() {
-      selectedDate = DateTime.now();
-      _noteController.clear();
-      _amountController.clear();
-      selectedCategory = "Khác";
-    });
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final imageFile = await _cloudinaryService.pickImage();
+      if (imageFile == null) return;
+
+      if (!mounted) return;
+      setState(() {
+        _selectedImage = imageFile;
+      });
+    } catch (e) {
+      print('Error in _pickAndUploadImage: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Nhập giao dịch")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Chọn loại giao dịch
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildTransactionTypeButton("Tiền chi", false),
-                _buildTransactionTypeButton("Tiền thu", true),
-              ],
-            ),
-            const Divider(thickness: 1),
-
-            // Chọn ngày giao dịch
-            ListTile(
-              title: const Text("Ngày"),
-              subtitle: Text(
-                DateFormat('dd/MM/yyyy HH:mm').format(selectedDate),
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.calendar_today, color: Colors.blue),
-                onPressed: () => _selectDate(context),
-              ),
-            ),
-
-            // Chọn danh mục
-            ListTile(
-              title: const Text("Danh mục"),
-              subtitle: Text(selectedCategory),
-              trailing: IconButton(
-                icon: const Icon(Icons.arrow_forward_ios, color: Colors.blue),
-                onPressed: () => _showCategorySelection(context),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // Nhập ghi chú
-            _buildTextField("Ghi chú", _noteController),
-
-            // Nhập số tiền
-            _buildTextField("Số tiền", _amountController, isNumber: true),
-
-            // Nút lưu
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: _saveTransaction,
-                child: Text(
-                  isTienThu ? "Nhập Tiền thu" : "Nhập Tiền chi",
-                  style: const TextStyle(fontSize: 18),
-                ),
-              ),
-            ),
-          ],
-        ),
+      appBar: AppBar(
+        title: const Text('Nhập vào'),
+        backgroundColor: Colors.blue[700],
+        foregroundColor: Colors.white,
       ),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+              ? Center(
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+              )
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Số dư ví',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                NumberFormat.currency(
+                                  locale: 'vi_VN',
+                                  symbol: '₫',
+                                ).format(_walletBalance),
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedType,
+                        decoration: InputDecoration(
+                          labelText: 'Loại giao dịch',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'Thu', child: Text('Thu')),
+                          DropdownMenuItem(value: 'Chi', child: Text('Chi')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedType = value!;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedWallet,
+                        decoration: InputDecoration(
+                          labelText: 'Chọn ví',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
+                        ),
+                        items:
+                            _wallets.map<DropdownMenuItem<String>>((wallet) {
+                              return DropdownMenuItem<String>(
+                                value: wallet['uniqueId'] as String,
+                                child: Text(
+                                  '${wallet['tenVi']} (${wallet['tenTaiKhoan']})',
+                                ),
+                              );
+                            }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedWallet = value;
+                            final selectedWallet = _wallets.firstWhere(
+                              (w) => w['uniqueId'] == value,
+                              orElse: () => _wallets.first,
+                            );
+                            _walletBalance = selectedWallet['soDu'];
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedCategory,
+                        decoration: InputDecoration(
+                          labelText: 'Chọn danh mục',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
+                        ),
+                        items:
+                            _categories.map((category) {
+                              return DropdownMenuItem(
+                                value: category['maDanhMuc'].toString(),
+                                child: Text(category['tenDanhMuc']),
+                              );
+                            }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCategory = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _amountController,
+                        decoration: InputDecoration(
+                          labelText: 'Số tiền',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                        ],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Vui lòng nhập số tiền';
+                          }
+                          if (double.tryParse(value) == null) {
+                            return 'Số tiền không hợp lệ';
+                          }
+                          final amount = double.parse(value);
+                          if (amount <= 0) {
+                            return 'Số tiền phải lớn hơn 0';
+                          }
+                          if (_selectedType == 'Chi' &&
+                              amount > _walletBalance) {
+                            return 'Số dư không đủ';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _noteController,
+                        decoration: InputDecoration(
+                          labelText: 'Ghi chú',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
+                        ),
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _pickAndUploadImage,
+                        icon: const Icon(Icons.image),
+                        label: const Text('Chọn ảnh'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      if (_selectedImage != null) ...[
+                        const SizedBox(height: 16),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            _selectedImage!,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _saveTransaction,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Lưu',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
     );
   }
 
-  Widget _buildTransactionTypeButton(String text, bool value) {
-    return Expanded(
-      child: TextButton(
-        onPressed: () {
+  Future<void> _saveTransaction() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final selectedWallet = _wallets.firstWhere(
+          (w) => w['uniqueId'] == _selectedWallet,
+        );
+
+        // Upload image first if exists
+        String? imageUrl;
+        if (_selectedImage != null) {
+          try {
+            imageUrl = await _cloudinaryService.uploadImage(_selectedImage!);
+            if (imageUrl == null) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Lỗi khi tải ảnh lên Cloudinary')),
+              );
+              return;
+            }
+          } catch (e) {
+            print('Error uploading image: $e');
+            if (!mounted) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('Lỗi khi tải ảnh: $e')));
+            return;
+          }
+        }
+
+        // Create transaction
+        final response = await http.post(
+          Uri.parse('https://10.0.2.2:7283/api/GiaoDich'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: json.encode({
+            'maNguoiDung': widget.maKH,
+            'maVi': selectedWallet['maVi'],
+            'maDanhMucNguoiDung': int.parse(_selectedCategory!),
+            'soTien': double.parse(_amountController.text),
+            'soTienCu': selectedWallet['soDu'],
+            'soTienMoi':
+                selectedWallet['soDu'] + double.parse(_amountController.text),
+            'ghiChu': _noteController.text,
+            'ngayGiaoDich': DateTime.now().toIso8601String(),
+            'loaiGiaoDich': _selectedType,
+            'maViNhan': null,
+          }),
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          final giaoDichData = json.decode(response.body);
+          print('Giao dịch được tạo thành công: ${response.body}');
+
+          try {
+            await _saveTransactionHistory(
+              giaoDichData['maGiaoDich'],
+              selectedWallet['soDu'],
+              selectedWallet['soDu'] + double.parse(_amountController.text),
+            );
+
+            // Save image URL if exists
+            if (imageUrl != null) {
+              await http.post(
+                Uri.parse('https://10.0.2.2:7283/api/AnhHoaDon'),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                },
+                body: json.encode({
+                  'maGiaoDich': giaoDichData['maGiaoDich'],
+                  'duongDanAnh': imageUrl,
+                }),
+              );
+            }
+
+            await _loadWallets();
+
+            if (widget.onTransactionAdded != null) {
+              widget.onTransactionAdded!();
+            }
+
+            transactionUpdateController.add(null);
+
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Giao dịch đã được lưu thành công'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+
+              _amountController.clear();
+              _noteController.clear();
+              setState(() {
+                _selectedImage = null;
+                _imageUrl = null;
+              });
+            }
+          } catch (e) {
+            print('Lỗi khi lưu lịch sử giao dịch: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Giao dịch đã được tạo nhưng lỗi khi lưu lịch sử: $e',
+                  ),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          }
+        } else {
+          throw Exception(
+            'Lỗi khi tạo giao dịch: ${response.statusCode} - ${response.body}',
+          );
+        }
+      } catch (e) {
+        print('Lỗi khi tạo giao dịch: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) {
           setState(() {
-            isTienThu = value;
+            _isLoading = false;
           });
+        }
+      }
+    }
+  }
+
+  Future<void> _saveTransactionHistory(
+    int maGiaoDich,
+    double soTienCu,
+    double soTienMoi,
+  ) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://10.0.2.2:7283/api/LichSuGiaoDich'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isTienThu == value ? Colors.blue : Colors.grey,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
+        body: json.encode({
+          'maGiaoDich': maGiaoDich,
+          'hanhDong': 'TaoMoi',
+          'soTienCu': soTienCu,
+          'soTienMoi': soTienMoi,
+          'thucHienBoi': widget.maKH,
+          'thoiGian': DateTime.now().toIso8601String(),
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        print('Lưu lịch sử giao dịch thành công');
+        print('Response body: ${response.body}');
+      } else {
+        print('Lỗi khi lưu lịch sử giao dịch: ${response.statusCode}');
+        print('Response body: ${response.body}');
+        throw Exception(
+          'Lỗi khi lưu lịch sử giao dịch: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('Lỗi khi lưu lịch sử giao dịch: $e');
+      throw Exception('Lỗi khi lưu lịch sử giao dịch: $e');
+    }
   }
 
-  Widget _buildTextField(
-    String label,
-    TextEditingController controller, {
-    bool isNumber = false,
-  }) {
-    return ListTile(
-      title: Text(label),
-      subtitle: TextField(
-        controller: controller,
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        inputFormatters:
-            isNumber ? [FilteringTextInputFormatter.digitsOnly] : [],
-        decoration: const InputDecoration(hintText: "Nhập dữ liệu..."),
-      ),
-    );
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
   }
-
   void _showCategorySelection(BuildContext context) async {
     // Chuyển sang trang HangMucScreen và nhận kết quả trả về
     final result = await Navigator.push(
