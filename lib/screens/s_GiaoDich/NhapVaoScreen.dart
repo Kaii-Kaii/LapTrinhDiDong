@@ -186,6 +186,13 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                   'thuChi': category['thuChi'],
                 };
               }).toList();
+              data.map((category) {
+                return {
+                  'maDanhMuc': category['maDanhMucNguoiDung'],
+                  'tenDanhMuc': category['tenDanhMucNguoiDung'],
+                  'thuChi': category['thuChi'], // Sử dụng trường thuChi
+                };
+              }).toList();
           if (_categories.isNotEmpty) {
             _selectedCategory = _categories[0]['maDanhMuc'].toString();
           }
@@ -614,6 +621,250 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
               ),
             ],
           ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Nhập vào'),
+        backgroundColor: Colors.blue[700],
+        foregroundColor: Colors.white,
+      ),
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+              ? Center(
+                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+              )
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              const Text(
+                                'Số dư ví',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                NumberFormat(
+                                      '#,###',
+                                      'en_US',
+                                    ).format(_walletBalance) +
+                                    ' VND',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedType,
+                        decoration: InputDecoration(
+                          labelText: 'Loại giao dịch',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'Thu', child: Text('Thu')),
+                          DropdownMenuItem(value: 'Chi', child: Text('Chi')),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedType = value!;
+                            _selectedCategory = null; // Reset danh mục
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedWallet,
+                        decoration: InputDecoration(
+                          labelText: 'Chọn ví',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
+                        ),
+                        items:
+                            _wallets.map<DropdownMenuItem<String>>((wallet) {
+                              return DropdownMenuItem<String>(
+                                value: wallet['uniqueId'] as String,
+                                child: Text(
+                                  '${wallet['tenVi']} (${wallet['tenTaiKhoan']})',
+                                ),
+                              );
+                            }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedWallet = value;
+                            final selectedWallet = _wallets.firstWhere(
+                              (w) => w['uniqueId'] == value,
+                              orElse: () => _wallets.first,
+                            );
+                            _walletBalance = selectedWallet['soDu'];
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: _selectedCategory,
+                        decoration: InputDecoration(
+                          labelText: 'Chọn danh mục',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
+                        ),
+                        items:
+                            _categories
+                                .where(
+                                  (category) =>
+                                      category['thuChi'] == _selectedType,
+                                ) // Lọc theo thuChi
+                                .map((category) {
+                                  return DropdownMenuItem(
+                                    value: category['maDanhMuc'].toString(),
+                                    child: Text(category['tenDanhMuc']),
+                                  );
+                                })
+                                .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCategory = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _amountController,
+                        decoration: InputDecoration(
+                          labelText: 'Số tiền',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          CurrencyInputFormatter(),
+                        ], // Use currency formatter
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Vui lòng nhập số tiền';
+                          }
+                          // Remove formatting for validation
+                          String cleanValue = value.replaceAll(
+                            RegExp(r'[^0-9]'),
+                            '',
+                          );
+                          if (double.tryParse(cleanValue) == null) {
+                            return 'Số tiền không hợp lệ';
+                          }
+                          final amount = double.parse(cleanValue);
+                          if (amount <= 0) {
+                            return 'Số tiền phải lớn hơn 0';
+                          }
+                          if (_selectedType == 'Chi' &&
+                              amount > _walletBalance) {
+                            return 'Số dư không đủ';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _noteController,
+                        decoration: InputDecoration(
+                          labelText: 'Ghi chú',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          ),
+                          labelStyle: TextStyle(color: Colors.blue[700]),
+                        ),
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: _pickAndUploadImage,
+                        icon: const Icon(Icons.image),
+                        label: const Text('Chọn ảnh'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      if (_selectedImage != null) ...[
+                        const SizedBox(height: 16),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            _selectedImage!,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _saveTransaction,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: Colors.blue[700],
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Lưu',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
     );
   }
 
