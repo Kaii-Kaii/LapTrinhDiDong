@@ -120,17 +120,13 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
           _categories =
-              data
-                  .map(
-                    (category) => {
-                      'maDanhMuc': category['maDanhMucNguoiDung'],
-                      'tenDanhMuc': category['tenDanhMucNguoiDung'],
-                      'toiDa': category['toiDa']?.toDouble() ?? 0.0,
-                      'soTienHienTai':
-                          category['soTienHienTai']?.toDouble() ?? 0.0,
-                    },
-                  )
-                  .toList();
+              data.map((category) {
+                return {
+                  'maDanhMuc': category['maDanhMucNguoiDung'],
+                  'tenDanhMuc': category['tenDanhMucNguoiDung'],
+                  'thuChi': category['thuChi'], // Sử dụng trường thuChi
+                };
+              }).toList();
           if (_categories.isNotEmpty) {
             _selectedCategory = _categories[0]['maDanhMuc'].toString();
           }
@@ -288,6 +284,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                         onChanged: (value) {
                           setState(() {
                             _selectedType = value!;
+                            _selectedCategory = null; // Reset danh mục
                           });
                         },
                       ),
@@ -340,12 +337,18 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
                           labelStyle: TextStyle(color: Colors.blue[700]),
                         ),
                         items:
-                            _categories.map((category) {
-                              return DropdownMenuItem(
-                                value: category['maDanhMuc'].toString(),
-                                child: Text(category['tenDanhMuc']),
-                              );
-                            }).toList(),
+                            _categories
+                                .where(
+                                  (category) =>
+                                      category['thuChi'] == _selectedType,
+                                ) // Lọc theo thuChi
+                                .map((category) {
+                                  return DropdownMenuItem(
+                                    value: category['maDanhMuc'].toString(),
+                                    child: Text(category['tenDanhMuc']),
+                                  );
+                                })
+                                .toList(),
                         onChanged: (value) {
                           setState(() {
                             _selectedCategory = value;
