@@ -5,10 +5,11 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'TongQuan.dart'; // Import to access transactionUpdateController
+import 'package:qltncn/screens/services/cloudinary_service.dart';
+import 'TongQuan.dart'; 
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:qltncn/screens/services/cloudinary_service.dart';
+
 class Transaction {
   final int maLichSu;
   final int maGiaoDich;
@@ -266,25 +267,67 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Chỉnh sửa giao dịch'),
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'Chỉnh sửa giao dịch',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
             content: Form(
               key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Ví: ${viNames[transaction.maVi] ?? 'Đang tải...'}'),
-                  Text(
-                    'Danh mục: ${danhMucNames[transaction.maDanhMucNguoiDung] ?? 'Đang tải...'}',
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ví: ${viNames[transaction.maVi] ?? 'Đang tải...'}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Danh mục: ${danhMucNames[transaction.maDanhMucNguoiDung] ?? 'Đang tải...'}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Loại giao dịch: ${transaction.loaiGiaoDich}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Ghi chú: ${transaction.ghiChu}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
                   ),
-                  Text('Loại giao dịch: ${transaction.loaiGiaoDich}'),
-                  Text('Ghi chú: ${transaction.ghiChu}'),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _amountController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Số tiền',
-                      border: OutlineInputBorder(),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.blue[700]!),
+                      ),
+                      labelStyle: TextStyle(color: Colors.blue[700]),
+                      filled: true,
+                      fillColor: Colors.grey[50],
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [
@@ -316,111 +359,148 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Hủy'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    try {
-                      final newAmount = double.parse(_amountController.text);
-                      final oldAmount = transaction.soTienGiaoDich ?? 0;
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.grey[200],
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Hủy',
+                      style: TextStyle(color: Colors.black87),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        try {
+                          final newAmount = double.parse(
+                            _amountController.text,
+                          );
+                          final oldAmount = transaction.soTienGiaoDich ?? 0;
 
-                      // Calculate the difference in amount
-                      final amountDifference = newAmount - oldAmount;
+                          // Calculate the difference in amount
+                          final amountDifference = newAmount - oldAmount;
 
-                      // Calculate new balances based on transaction type
-                      double newSoTienCu = transaction.soTienCu ?? 0;
-                      double newSoTienMoi;
+                          // Calculate new balances based on transaction type
+                          double newSoTienCu = transaction.soTienCu ?? 0;
+                          double newSoTienMoi;
 
-                      if (transaction.loaiGiaoDich == "Thu") {
-                        // For income, subtract old amount and add new amount
-                        newSoTienMoi = newSoTienCu + amountDifference;
-                      } else {
-                        // For expense, add old amount and subtract new amount
-                        newSoTienMoi = newSoTienCu - amountDifference;
+                          if (transaction.loaiGiaoDich == "Thu") {
+                            // For income, subtract old amount and add new amount
+                            newSoTienMoi = newSoTienCu + amountDifference;
+                          } else {
+                            // For expense, add old amount and subtract new amount
+                            newSoTienMoi = newSoTienCu - amountDifference;
 
-                        // Check if there's enough balance for expense
-                        if (amountDifference > 0 &&
-                            newSoTienCu < amountDifference) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Không đủ số dư để thực hiện giao dịch này',
+                            // Check if there's enough balance for expense
+                            if (amountDifference > 0 &&
+                                newSoTienCu < amountDifference) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Không đủ số dư để thực hiện giao dịch này',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+                          }
+
+                          final response = await http.put(
+                            Uri.parse(
+                              'https://10.0.2.2:7283/api/GiaoDich/${transaction.maGiaoDich}',
+                            ),
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Accept': 'application/json',
+                            },
+                            body: jsonEncode({
+                              'maGiaoDich': transaction.maGiaoDich,
+                              'maNguoiDung': widget.maKH,
+                              'maVi': transaction.maVi,
+                              'maDanhMucNguoiDung':
+                                  transaction.maDanhMucNguoiDung,
+                              'soTien': newAmount,
+                              'soTienCu': newSoTienCu,
+                              'soTienMoi': newSoTienMoi,
+                              'ghiChu': transaction.ghiChu,
+                              'ngayGiaoDich':
+                                  transaction.thoiGian.toIso8601String(),
+                              'loaiGiaoDich': transaction.loaiGiaoDich,
+                              'maViNhan': null,
+                            }),
+                          );
+
+                          if (response.statusCode == 200) {
+                            // Create new transaction history entry with updated balances
+                            await _createTransactionHistory(
+                              transaction.maGiaoDich,
+                              newSoTienCu,
+                              newSoTienMoi,
+                              'CapNhat',
+                            );
+
+                            // Notify other screens about the transaction update
+                            transactionUpdateController.add(null);
+
+                            // Refresh the transaction list
+                            await fetchTransactions();
+                            if (mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Cập nhật giao dịch thành công',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } else {
+                            throw Exception(
+                              'Lỗi khi cập nhật giao dịch: ${response.statusCode}',
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Lỗi: $e'),
+                                backgroundColor: Colors.red,
                               ),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          return;
+                            );
+                          }
                         }
                       }
-
-                      final response = await http.put(
-                        Uri.parse(
-                          'https://10.0.2.2:7283/api/GiaoDich/${transaction.maGiaoDich}',
-                        ),
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Accept': 'application/json',
-                        },
-                        body: jsonEncode({
-                          'maGiaoDich': transaction.maGiaoDich,
-                          'maNguoiDung': widget.maKH,
-                          'maVi': transaction.maVi,
-                          'maDanhMucNguoiDung': transaction.maDanhMucNguoiDung,
-                          'soTien': newAmount,
-                          'soTienCu': newSoTienCu,
-                          'soTienMoi': newSoTienMoi,
-                          'ghiChu': transaction.ghiChu,
-                          'ngayGiaoDich':
-                              transaction.thoiGian.toIso8601String(),
-                          'loaiGiaoDich': transaction.loaiGiaoDich,
-                          'maViNhan': null,
-                        }),
-                      );
-
-                      if (response.statusCode == 200) {
-                        // Create new transaction history entry with updated balances
-                        await _createTransactionHistory(
-                          transaction.maGiaoDich,
-                          newSoTienCu,
-                          newSoTienMoi,
-                          'CapNhat',
-                        );
-
-                        // Notify other screens about the transaction update
-                        transactionUpdateController.add(null);
-
-                        // Refresh the transaction list
-                        await fetchTransactions();
-                        if (mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Cập nhật giao dịch thành công'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
-                      } else {
-                        throw Exception(
-                          'Lỗi khi cập nhật giao dịch: ${response.statusCode}',
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Lỗi: $e'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    }
-                  }
-                },
-                child: const Text('Lưu'),
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[700],
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Lưu',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -723,6 +803,7 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Lịch sử ghi chép'),
         backgroundColor: Colors.blue[700],
@@ -753,7 +834,8 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
       ),
       body: Column(
         children: [
-          Padding(
+          Container(
+            color: Colors.white,
             padding: const EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -799,9 +881,13 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
                       itemBuilder: (context, index) {
                         final transaction = filteredTransactions[index];
                         return Card(
+                          elevation: 2,
                           margin: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: ListTile(
                             onTap: () => _showEditDialog(transaction),
