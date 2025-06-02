@@ -442,11 +442,12 @@ class _ThemTaiKhoanScreenState extends State<ThemTaiKhoanScreen> {
         ),
       );
 
-      // Gọi callback để reload trang chính ngay lập tức
       widget.onAccountAdded?.call();
 
-      // Reset form để người dùng có thể thêm tài khoản khác
-      _resetForm();
+      // Quay về màn hình trước sau khi thêm xong
+      Future.delayed(const Duration(milliseconds: 500), () {
+        Navigator.pop(context);
+      });
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

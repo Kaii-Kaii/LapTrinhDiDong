@@ -4,19 +4,17 @@ import 'package:intl/intl.dart';
 import 'package:qltncn/model/Vi/Vi/Vi.dart';
 import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung.dart';
 import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung_service.dart';
-import 'package:qltncn/screens/s_TaiKhoan/s_TaiKhoan_Khac/ChiTietViScreen.dart';
 import 'package:qltncn/widget/vi_utils.dart';
 
 class TabTaiKhoan extends StatefulWidget {
   final String maKH;
-
   const TabTaiKhoan({super.key, required this.maKH});
 
   @override
-  State<TabTaiKhoan> createState() => _TabTaiKhoanState();
+  TabTaiKhoanState createState() => TabTaiKhoanState(); // <- bỏ dấu _
 }
 
-class _TabTaiKhoanState extends State<TabTaiKhoan> {
+class TabTaiKhoanState extends State<TabTaiKhoan> {
   List<ViNguoiDung> danhSachVi = [];
   bool isLoading = true;
   final NumberFormat currencyFormat = NumberFormat('#,###', 'en_US');
@@ -24,10 +22,10 @@ class _TabTaiKhoanState extends State<TabTaiKhoan> {
   @override
   void initState() {
     super.initState();
-    _loadDanhSachVi();
+    loadDanhSachVi();
   }
 
-  Future<void> _loadDanhSachVi() async {
+  Future<void> loadDanhSachVi() async {
     final data = await ViNguoiDungService.fetchViNguoiDungByMaKhachHang(
       widget.maKH,
     );
@@ -498,7 +496,7 @@ class _TabTaiKhoanState extends State<TabTaiKhoan> {
                         ),
                       );
                       Navigator.pop(context);
-                      if (mounted) _loadDanhSachVi();
+                      if (mounted) loadDanhSachVi();
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -838,7 +836,7 @@ class _TabTaiKhoanState extends State<TabTaiKhoan> {
                                 ),
                               );
                               Navigator.pop(context);
-                              if (mounted) _loadDanhSachVi();
+                              if (mounted) loadDanhSachVi();
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(

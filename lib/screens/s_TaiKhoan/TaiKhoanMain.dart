@@ -17,6 +17,9 @@ class TaikhoanMain extends StatefulWidget {
 class _TaikhoanMainState extends State<TaikhoanMain> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // GlobalKey để truy cập hàm reload danh sách ví trong TabTaiKhoan
+  final GlobalKey<TabTaiKhoanState> _taiKhoanKey = GlobalKey<TabTaiKhoanState>();
+
   @override
   void initState() {
     super.initState();
@@ -51,7 +54,7 @@ class _TaikhoanMainState extends State<TaikhoanMain> with SingleTickerProviderSt
       body: TabBarView(
         controller: _tabController,
         children: [
-          TabTaiKhoan(maKH: widget.maKH),
+          TabTaiKhoan(key: _taiKhoanKey, maKH: widget.maKH),
           TabSoTietKiem(maKH: widget.maKH),
           TabTichLuy(maKH: widget.maKH),
         ],
@@ -59,15 +62,26 @@ class _TaikhoanMainState extends State<TaikhoanMain> with SingleTickerProviderSt
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue,
         child: const Icon(Icons.add),
-        onPressed: () {
+        onPressed: () async {
           if (_tabController.index == 0) {
-           Navigator.push(context, MaterialPageRoute(builder: (_) => ThemTaiKhoanScreen(maKH: widget.maKH)));
+            // Truyền callback khi thêm tài khoản thành công
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ThemTaiKhoanScreen(
+                  maKH: widget.maKH,
+                  onAccountAdded: () {
+                    _taiKhoanKey.currentState?.loadDanhSachVi();
+                  },
+                ),
+              ),
+            );
           } else if (_tabController.index == 1) {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const ThemSoTietKiemScreen()));
           } else if (_tabController.index == 2) {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const ThemTichLuyScreen()));
           }
-        }
+        },
       ),
     );
   }

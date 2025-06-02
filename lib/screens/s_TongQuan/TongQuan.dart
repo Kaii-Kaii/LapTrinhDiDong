@@ -178,6 +178,14 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     _transactionUpdateSubscription?.cancel();
     super.dispose();
   }
+  
+  String getShortName(String fullName) {
+    List<String> parts = fullName.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts[parts.length - 2]} ${parts[parts.length - 1]}';
+    }
+    return fullName; // Nếu chỉ có 1 từ thì trả về nguyên gốc
+  }
 
   Future<void> _loadTransactionData() async {
     try {
@@ -449,7 +457,7 @@ class _TongQuanScreenState extends State<TongQuanScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Chào ${hoTenKhachHang ?? userName}!",
+                          "Chào ${getShortName(hoTenKhachHang ?? userName)}!",
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,

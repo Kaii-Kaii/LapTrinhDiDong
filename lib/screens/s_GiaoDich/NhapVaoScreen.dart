@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import '../s_TongQuan/TongQuan.dart';
-import 'package:qltncn/screens/s_HangMuc/HangMucScreen.dart';
+
 
 class NhapVaoScreen extends StatefulWidget {
   final String maKH;
@@ -25,7 +25,6 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
   String _selectedType = 'Thu';
   String? _selectedWallet;
   String? _selectedCategory;
-  String? selectedCategory; // Add this missing variable
   double _walletBalance = 0.0;
   bool _isLoading = true;
   String? _error;
@@ -120,13 +119,17 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
           _categories =
-              data.map((category) {
-                return {
-                  'maDanhMuc': category['maDanhMucNguoiDung'],
-                  'tenDanhMuc': category['tenDanhMucNguoiDung'],
-                  'thuChi': category['thuChi'], // Sử dụng trường thuChi
-                };
-              }).toList();
+              data
+                  .map(
+                    (category) => {
+                      'maDanhMuc': category['maDanhMucNguoiDung'],
+                      'tenDanhMuc': category['tenDanhMucNguoiDung'],
+                      'toiDa': category['toiDa']?.toDouble() ?? 0.0,
+                      'soTienHienTai':
+                          category['soTienHienTai']?.toDouble() ?? 0.0,
+                    },
+                  )
+                  .toList();
           if (_categories.isNotEmpty) {
             _selectedCategory = _categories[0]['maDanhMuc'].toString();
           }
@@ -181,13 +184,6 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
             ],
           ),
     );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Nhập thành công!'),
-        backgroundColor: Colors.blue,
-      ),
-    );
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -211,10 +207,23 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Nhập vào'),
+        title: const Text(
+          'Nhập vào',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
         backgroundColor: Colors.blue[700],
         foregroundColor: Colors.white,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(24),
+            bottomRight: Radius.circular(24),
+          ),
+        ),
       ),
       body:
           _isLoading
@@ -223,234 +232,455 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
               ? Center(
                 child: Text(_error!, style: const TextStyle(color: Colors.red)),
               )
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Card(
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              const Text(
-                                'Số dư ví',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
-                                ),
+              : Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.all(20.0),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.blue[700]!, Colors.blue[500]!],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                NumberFormat(
-                                      '#,###',
-                                      'en_US',
-                                    ).format(_walletBalance) +
-                                    ' VND',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue[700],
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text(
+                                  'Số dư ví',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white70,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: _selectedType,
-                        decoration: InputDecoration(
-                          labelText: 'Loại giao dịch',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.blue[700]!),
-                          ),
-                          labelStyle: TextStyle(color: Colors.blue[700]),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'Thu', child: Text('Thu')),
-                          DropdownMenuItem(value: 'Chi', child: Text('Chi')),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedType = value!;
-                            _selectedCategory = null; // Reset danh mục
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: _selectedWallet,
-                        decoration: InputDecoration(
-                          labelText: 'Chọn ví',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.blue[700]!),
-                          ),
-                          labelStyle: TextStyle(color: Colors.blue[700]),
-                        ),
-                        items:
-                            _wallets.map<DropdownMenuItem<String>>((wallet) {
-                              return DropdownMenuItem<String>(
-                                value: wallet['uniqueId'] as String,
-                                child: Text(
-                                  '${wallet['tenVi']} (${wallet['tenTaiKhoan']})',
+                                const SizedBox(height: 8),
+                                Text(
+                                  NumberFormat.currency(
+                                    locale: 'vi_VN',
+                                    symbol: '₫',
+                                  ).format(_walletBalance),
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              );
-                            }).toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedWallet = value;
-                            final selectedWallet = _wallets.firstWhere(
-                              (w) => w['uniqueId'] == value,
-                              orElse: () => _wallets.first,
-                            );
-                            _walletBalance = selectedWallet['soDu'];
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: _selectedCategory,
-                        decoration: InputDecoration(
-                          labelText: 'Chọn danh mục',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                              ],
+                            ),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.blue[700]!),
-                          ),
-                          labelStyle: TextStyle(color: Colors.blue[700]),
                         ),
-                        items:
-                            _categories
-                                .where(
-                                  (category) =>
-                                      category['thuChi'] == _selectedType,
-                                ) // Lọc theo thuChi
-                                .map((category) {
-                                  return DropdownMenuItem(
-                                    value: category['maDanhMuc'].toString(),
-                                    child: Text(category['tenDanhMuc']),
-                                  );
-                                })
-                                .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCategory = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _amountController,
-                        decoration: InputDecoration(
-                          labelText: 'Số tiền',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        const SizedBox(height: 24),
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  child: const Text(
+                                    'Thông tin giao dịch',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: DropdownButtonFormField<String>(
+                                    value: _selectedType,
+                                    decoration: InputDecoration(
+                                      labelText: 'Loại giao dịch',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color: Colors.blue[700]!,
+                                        ),
+                                      ),
+                                      labelStyle: TextStyle(
+                                        color: Colors.blue[700],
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.grey[50],
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: 'Thu',
+                                        child: Text('Thu'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: 'Chi',
+                                        child: Text('Chi'),
+                                      ),
+                                    ],
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _selectedType = value!;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: DropdownButtonFormField<String>(
+                                    value: _selectedWallet,
+                                    decoration: InputDecoration(
+                                      labelText: 'Chọn ví',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color: Colors.blue[700]!,
+                                        ),
+                                      ),
+                                      labelStyle: TextStyle(
+                                        color: Colors.blue[700],
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.grey[50],
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                    ),
+                                    isExpanded: true,
+                                    icon: Icon(
+                                      Icons.arrow_drop_down,
+                                      color: Colors.blue[700],
+                                    ),
+                                    dropdownColor: Colors.white,
+                                    items:
+                                        _wallets.map<DropdownMenuItem<String>>((
+                                          wallet,
+                                        ) {
+                                          return DropdownMenuItem<String>(
+                                            value: wallet['uniqueId'] as String,
+                                            child: Text(
+                                              '${wallet['tenTaiKhoan']} (${wallet['tenVi']})',
+                                              style: const TextStyle(
+                                                color: Colors.black87,
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _selectedWallet = value;
+                                        final selectedWallet = _wallets
+                                            .firstWhere(
+                                              (w) => w['uniqueId'] == value,
+                                              orElse: () => _wallets.first,
+                                            );
+                                        _walletBalance = selectedWallet['soDu'];
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: DropdownButtonFormField<String>(
+                                    value: _selectedCategory,
+                                    decoration: InputDecoration(
+                                      labelText: 'Chọn danh mục',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color: Colors.blue[700]!,
+                                        ),
+                                      ),
+                                      labelStyle: TextStyle(
+                                        color: Colors.blue[700],
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.grey[50],
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                    ),
+                                    items:
+                                        _categories.map((category) {
+                                          return DropdownMenuItem(
+                                            value:
+                                                category['maDanhMuc']
+                                                    .toString(),
+                                            child: Text(category['tenDanhMuc']),
+                                          );
+                                        }).toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _selectedCategory = value;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: TextFormField(
+                                    controller: _amountController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Số tiền',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color: Colors.blue[700]!,
+                                        ),
+                                      ),
+                                      labelStyle: TextStyle(
+                                        color: Colors.blue[700],
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.grey[50],
+                                      prefixIcon: Icon(
+                                        Icons.attach_money,
+                                        color: Colors.blue[700],
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(
+                                        RegExp(r'[0-9]'),
+                                      ),
+                                    ],
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Vui lòng nhập số tiền';
+                                      }
+                                      if (double.tryParse(value) == null) {
+                                        return 'Số tiền không hợp lệ';
+                                      }
+                                      final amount = double.parse(value);
+                                      if (amount <= 0) {
+                                        return 'Số tiền phải lớn hơn 0';
+                                      }
+                                      if (_selectedType == 'Chi' &&
+                                          amount > _walletBalance) {
+                                        return 'Số dư không đủ';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: TextFormField(
+                                    controller: _noteController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Ghi chú',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide(
+                                          color: Colors.blue[700]!,
+                                        ),
+                                      ),
+                                      labelStyle: TextStyle(
+                                        color: Colors.blue[700],
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.grey[50],
+                                      prefixIcon: Icon(
+                                        Icons.note,
+                                        color: Colors.blue[700],
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 12,
+                                          ),
+                                    ),
+                                    maxLines: 3,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          labelStyle: TextStyle(color: Colors.blue[700]),
                         ),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          CurrencyInputFormatter(),
-                        ], // Use currency formatter
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Vui lòng nhập số tiền';
-                          }
-                          // Remove formatting for validation
-                          String cleanValue = value.replaceAll(
-                            RegExp(r'[^0-9]'),
-                            '',
-                          );
-                          if (double.tryParse(cleanValue) == null) {
-                            return 'Số tiền không hợp lệ';
-                          }
-                          final amount = double.parse(cleanValue);
-                          if (amount <= 0) {
-                            return 'Số tiền phải lớn hơn 0';
-                          }
-                          if (_selectedType == 'Chi' &&
-                              amount > _walletBalance) {
-                            return 'Số dư không đủ';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _noteController,
-                        decoration: InputDecoration(
-                          labelText: 'Ghi chú',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        const SizedBox(height: 24),
+                        Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.blue[700]!),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                  child: const Text(
+                                    'Hình ảnh giao dịch',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Center(
+                                  child: Container(
+                                    width: 200,
+                                    child: ElevatedButton.icon(
+                                      onPressed: _pickAndUploadImage,
+                                      icon: const Icon(
+                                        Icons.add_photo_alternate,
+                                        size: 28,
+                                      ),
+                                      label: const Text(
+                                        'Chọn ảnh',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.blue[700],
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 16,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        elevation: 3,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                if (_selectedImage != null) ...[
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.file(
+                                        _selectedImage!,
+                                        height: 200,
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
-                          labelStyle: TextStyle(color: Colors.blue[700]),
                         ),
-                        maxLines: 3,
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton.icon(
-                        onPressed: _pickAndUploadImage,
-                        icon: const Icon(Icons.image),
-                        label: const Text('Chọn ảnh'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[700],
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                      if (_selectedImage != null) ...[
-                        const SizedBox(height: 16),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            _selectedImage!,
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: _saveTransaction,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            backgroundColor: Colors.blue[700],
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 4,
+                          ),
+                          child: const Text(
+                            'Lưu giao dịch',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: _saveTransaction,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.blue[700],
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Lưu',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -490,13 +720,6 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           }
         }
 
-        // Clean amount text for parsing
-        String cleanAmount = _amountController.text.replaceAll(
-          RegExp(r'[^0-9]'),
-          '',
-        );
-        double amount = double.parse(cleanAmount);
-
         // Create transaction
         final response = await http.post(
           Uri.parse('https://10.0.2.2:7283/api/GiaoDich'),
@@ -508,12 +731,10 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
             'maNguoiDung': widget.maKH,
             'maVi': selectedWallet['maVi'],
             'maDanhMucNguoiDung': int.parse(_selectedCategory!),
-            'soTien': amount,
+            'soTien': double.parse(_amountController.text),
             'soTienCu': selectedWallet['soDu'],
             'soTienMoi':
-                _selectedType == 'Thu'
-                    ? selectedWallet['soDu'] + amount
-                    : selectedWallet['soDu'] - amount,
+                selectedWallet['soDu'] + double.parse(_amountController.text),
             'ghiChu': _noteController.text,
             'ngayGiaoDich': DateTime.now().toIso8601String(),
             'loaiGiaoDich': _selectedType,
@@ -529,9 +750,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
             await _saveTransactionHistory(
               giaoDichData['maGiaoDich'],
               selectedWallet['soDu'],
-              _selectedType == 'Thu'
-                  ? selectedWallet['soDu'] + amount
-                  : selectedWallet['soDu'] - amount,
+              selectedWallet['soDu'] + double.parse(_amountController.text),
             );
 
             // Save image URL if exists
@@ -650,67 +869,5 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
-  }
-
-  void _showCategorySelection(BuildContext context) async {
-    // Chuyển sang trang HangMucScreen và nhận kết quả trả về
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => HangMucScreen(maKhachHang: widget.maKH),
-      ),
-    );
-    if (result != null && result is String) {
-      setState(() {
-        selectedCategory = result;
-      });
-    }
-  }
-
-  // List<String> get _incomeCategories => [
-  //   "Lương",
-  //   "Thưởng",
-  //   "Lãi",
-  //   "Lãi tiết kiệm",
-  //   "Khác",
-  // ];
-  // List<String> get _expenseCategories => [
-  //   "Ăn uống",
-  //   "Dịch vụ",
-  //   "Đi lại",
-  //   "Con cái",
-  //   "Trang phục",
-  //   "Sức khỏe",
-  //   "Hiếu hỉ",
-  //   "Khác",
-  // ];
-}
-
-// Add CurrencyInputFormatter class
-class CurrencyInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    if (newValue.text.isEmpty) {
-      return newValue;
-    }
-
-    // Remove all non-digit characters
-    String digitsOnly = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-
-    if (digitsOnly.isEmpty) {
-      return const TextEditingValue();
-    }
-
-    // Format with comma separator
-    final formatter = NumberFormat('#,###', 'en_US');
-    String formatted = formatter.format(int.parse(digitsOnly));
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
   }
 }
