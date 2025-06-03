@@ -23,12 +23,18 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   String _selectedType = 'Thu';
-  String? _selectedWallet;
+  String? _selectedWalletName; // Tên ví được chọn
+  String? _selectedWalletAccount; // Tài khoản ví cụ thể được chọn
   String? _selectedCategory;
+  String? selectedCategory;
   double _walletBalance = 0.0;
   bool _isLoading = true;
+  bool _isLoadingAccounts = false; // Loading cho danh sách tài khoản
   String? _error;
-  List<Map<String, dynamic>> _wallets = [];
+  List<Map<String, dynamic>> _allWallets = []; // Tất cả ví
+  List<Map<String, dynamic>> _filteredAccounts =
+      []; // Tài khoản đã lọc theo tên ví
+  List<String> _walletNames = []; // Danh sách tên ví
   List<Map<String, dynamic>> _categories = [];
   final CloudinaryService _cloudinaryService = CloudinaryService();
   File? _selectedImage;
@@ -59,30 +65,39 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         List<Map<String, dynamic>> wallets = [];
+        Set<String> walletNamesSet = {};
 
         for (var wallet in data) {
           final String uniqueId =
               '${wallet['maVi']}_${wallet['tenTaiKhoan'] ?? 'none'}';
+          final String walletName = wallet['vi']['tenVi'] ?? 'Không xác định';
+
           wallets.add({
             'maVi': wallet['maVi'],
-            'tenVi': wallet['vi']['tenVi'],
+            'tenVi': walletName,
             'tenTaiKhoan': wallet['tenTaiKhoan'] ?? 'Không có tên',
             'soDu': wallet['soDu']?.toDouble() ?? 0.0,
-            'loaiVi': wallet['vi']['loaiVi'],
+            'loaiVi': wallet['vi']['loaiVi'] ?? 'Không xác định',
             'iconVi': wallet['vi']['iconVi'],
             'uniqueId': uniqueId,
           });
+
+          walletNamesSet.add(walletName);
         }
 
         print('Final wallets list: $wallets');
+        print('Wallet names: $walletNamesSet');
 
         setState(() {
-          _wallets = wallets;
-          if (_wallets.isNotEmpty) {
-            _selectedWallet = _wallets[0]['uniqueId'] as String;
-            _walletBalance = _wallets[0]['soDu'];
-          }
+          _allWallets = wallets;
+          _walletNames = walletNamesSet.toList()..sort();
           _isLoading = false;
+
+          // Reset selections khi load lại
+          _selectedWalletName = null;
+          _selectedWalletAccount = null;
+          _filteredAccounts = [];
+          _walletBalance = 0.0;
         });
       } else {
         setState(() {
@@ -96,6 +111,51 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
       setState(() {
         _error = 'Lỗi kết nối: $e';
         _isLoading = false;
+      });
+    }
+  }
+
+  void _onWalletNameChanged(String? walletName) {
+    setState(() {
+      _selectedWalletName = walletName;
+      _selectedWalletAccount = null;
+      _walletBalance = 0.0;
+      _isLoadingAccounts = true;
+    });
+
+    if (walletName != null) {
+      // Lọc tài khoản theo tên ví
+      final filteredAccounts =
+          _allWallets.where((wallet) => wallet['tenVi'] == walletName).toList();
+
+      setState(() {
+        _filteredAccounts = filteredAccounts;
+        _isLoadingAccounts = false;
+
+        // Tự động chọn tài khoản đầu tiên nếu có
+        if (_filteredAccounts.isNotEmpty) {
+          _selectedWalletAccount = _filteredAccounts[0]['uniqueId'] as String;
+          _walletBalance = _filteredAccounts[0]['soDu'];
+        }
+      });
+    } else {
+      setState(() {
+        _filteredAccounts = [];
+        _isLoadingAccounts = false;
+      });
+    }
+  }
+
+  void _onWalletAccountChanged(String? accountId) {
+    if (accountId != null) {
+      final selectedAccount = _filteredAccounts.firstWhere(
+        (w) => w['uniqueId'] == accountId,
+        orElse: () => _filteredAccounts.first,
+      );
+
+      setState(() {
+        _selectedWalletAccount = accountId;
+        _walletBalance = selectedAccount['soDu'];
       });
     }
   }
@@ -119,17 +179,14 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
           _categories =
-              data
-                  .map(
-                    (category) => {
-                      'maDanhMuc': category['maDanhMucNguoiDung'],
-                      'tenDanhMuc': category['tenDanhMucNguoiDung'],
-                      'toiDa': category['toiDa']?.toDouble() ?? 0.0,
-                      'soTienHienTai':
-                          category['soTienHienTai']?.toDouble() ?? 0.0,
-                    },
-                  )
-                  .toList();
+
+              data.map((category) {
+                return {
+                  'maDanhMuc': category['maDanhMucNguoiDung'],
+                  'tenDanhMuc': category['tenDanhMucNguoiDung'],
+                  'thuChi': category['thuChi'],
+                };
+              }).toList();
           if (_categories.isNotEmpty) {
             _selectedCategory = _categories[0]['maDanhMuc'].toString();
           }
@@ -145,28 +202,6 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
       setState(() {
         _error = 'Lỗi kết nối: $e';
       });
-    }
-  }
-
-  Future<void> _loadWalletBalance() async {
-    if (_selectedWallet != null) {
-      try {
-        final selectedWallet = _wallets.firstWhere(
-          (w) => w['uniqueId'] == _selectedWallet,
-          orElse: () => _wallets.first,
-        );
-
-        setState(() {
-          _walletBalance = selectedWallet['soDu'];
-          _isLoading = false;
-        });
-      } catch (e) {
-        print('Error loading wallet balance: $e');
-        setState(() {
-          _error = 'Lỗi khi tải số dư: $e';
-          _isLoading = false;
-        });
-      }
     }
   }
 
@@ -206,484 +241,373 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text(
-          'Nhập vào',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.blue[700],
-        foregroundColor: Colors.white,
-        elevation: 0,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(24),
-            bottomRight: Radius.circular(24),
+    final Color primaryBlue = Colors.blue[700]!;
+    final Color lightBlue = Colors.blue[50]!;
+
+    return DefaultTabController(
+      length: 2,
+      initialIndex: _selectedType == 'Thu' ? 0 : 1,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text('Nhập vào'),
+          backgroundColor: primaryBlue,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          bottom: TabBar(
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            onTap: (index) {
+              setState(() {
+                _selectedType = index == 0 ? 'Thu' : 'Chi';
+                _selectedCategory = null;
+              });
+            },
+            tabs: const [Tab(text: 'Thu'), Tab(text: 'Chi')],
           ),
         ),
-      ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _error != null
-              ? Center(
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              )
-              : Container(
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
+        body:
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                ? Center(
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                )
+                : TabBarView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _buildTransactionForm(
+                      context,
+                      'Thu',
+                      primaryBlue,
+                      lightBlue,
+                    ),
+                    _buildTransactionForm(
+                      context,
+                      'Chi',
+                      primaryBlue,
+                      lightBlue,
                     ),
                   ],
                 ),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.all(20.0),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Colors.blue[700]!, Colors.blue[500]!],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Column(
-                              children: [
-                                const Text(
-                                  'Số dư ví',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  NumberFormat.currency(
-                                    locale: 'vi_VN',
-                                    symbol: '₫',
-                                  ).format(_walletBalance),
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                  ),
-                                  child: const Text(
-                                    'Thông tin giao dịch',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: DropdownButtonFormField<String>(
-                                    value: _selectedType,
-                                    decoration: InputDecoration(
-                                      labelText: 'Loại giao dịch',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: Colors.blue[700]!,
-                                        ),
-                                      ),
-                                      labelStyle: TextStyle(
-                                        color: Colors.blue[700],
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.grey[50],
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 12,
-                                          ),
-                                    ),
-                                    items: const [
-                                      DropdownMenuItem(
-                                        value: 'Thu',
-                                        child: Text('Thu'),
-                                      ),
-                                      DropdownMenuItem(
-                                        value: 'Chi',
-                                        child: Text('Chi'),
-                                      ),
-                                    ],
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _selectedType = value!;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: DropdownButtonFormField<String>(
-                                    value: _selectedWallet,
-                                    decoration: InputDecoration(
-                                      labelText: 'Chọn ví',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: Colors.blue[700]!,
-                                        ),
-                                      ),
-                                      labelStyle: TextStyle(
-                                        color: Colors.blue[700],
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.grey[50],
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 12,
-                                          ),
-                                    ),
-                                    isExpanded: true,
-                                    icon: Icon(
-                                      Icons.arrow_drop_down,
-                                      color: Colors.blue[700],
-                                    ),
-                                    dropdownColor: Colors.white,
-                                    items:
-                                        _wallets.map<DropdownMenuItem<String>>((
-                                          wallet,
-                                        ) {
-                                          return DropdownMenuItem<String>(
-                                            value: wallet['uniqueId'] as String,
-                                            child: Text(
-                                              '${wallet['tenTaiKhoan']} (${wallet['tenVi']})',
-                                              style: const TextStyle(
-                                                color: Colors.black87,
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _selectedWallet = value;
-                                        final selectedWallet = _wallets
-                                            .firstWhere(
-                                              (w) => w['uniqueId'] == value,
-                                              orElse: () => _wallets.first,
-                                            );
-                                        _walletBalance = selectedWallet['soDu'];
-                                      });
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: DropdownButtonFormField<String>(
-                                    value: _selectedCategory,
-                                    decoration: InputDecoration(
-                                      labelText: 'Chọn danh mục',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: Colors.blue[700]!,
-                                        ),
-                                      ),
-                                      labelStyle: TextStyle(
-                                        color: Colors.blue[700],
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.grey[50],
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 12,
-                                          ),
-                                    ),
-                                    items:
-                                        _categories.map((category) {
-                                          return DropdownMenuItem(
-                                            value:
-                                                category['maDanhMuc']
-                                                    .toString(),
-                                            child: Text(category['tenDanhMuc']),
-                                          );
-                                        }).toList(),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _selectedCategory = value;
-                                      });
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: TextFormField(
-                                    controller: _amountController,
-                                    decoration: InputDecoration(
-                                      labelText: 'Số tiền',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: Colors.blue[700]!,
-                                        ),
-                                      ),
-                                      labelStyle: TextStyle(
-                                        color: Colors.blue[700],
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.grey[50],
-                                      prefixIcon: Icon(
-                                        Icons.attach_money,
-                                        color: Colors.blue[700],
-                                      ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 12,
-                                          ),
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.allow(
-                                        RegExp(r'[0-9]'),
-                                      ),
-                                    ],
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Vui lòng nhập số tiền';
-                                      }
-                                      if (double.tryParse(value) == null) {
-                                        return 'Số tiền không hợp lệ';
-                                      }
-                                      final amount = double.parse(value);
-                                      if (amount <= 0) {
-                                        return 'Số tiền phải lớn hơn 0';
-                                      }
-                                      if (_selectedType == 'Chi' &&
-                                          amount > _walletBalance) {
-                                        return 'Số dư không đủ';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: TextFormField(
-                                    controller: _noteController,
-                                    decoration: InputDecoration(
-                                      labelText: 'Ghi chú',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: Colors.blue[700]!,
-                                        ),
-                                      ),
-                                      labelStyle: TextStyle(
-                                        color: Colors.blue[700],
-                                      ),
-                                      filled: true,
-                                      fillColor: Colors.grey[50],
-                                      prefixIcon: Icon(
-                                        Icons.note,
-                                        color: Colors.blue[700],
-                                      ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 12,
-                                          ),
-                                    ),
-                                    maxLines: 3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                  ),
-                                  child: const Text(
-                                    'Hình ảnh giao dịch',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Center(
-                                  child: Container(
-                                    width: 200,
-                                    child: ElevatedButton.icon(
-                                      onPressed: _pickAndUploadImage,
-                                      icon: const Icon(
-                                        Icons.add_photo_alternate,
-                                        size: 28,
-                                      ),
-                                      label: const Text(
-                                        'Chọn ảnh',
-                                        style: TextStyle(fontSize: 16),
-                                      ),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue[700],
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 24,
-                                          vertical: 16,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        elevation: 3,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                if (_selectedImage != null) ...[
-                                  const SizedBox(height: 16),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.1),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.file(
-                                        _selectedImage!,
-                                        height: 200,
-                                        width: double.infinity,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: _saveTransaction,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: Colors.blue[700],
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 4,
-                          ),
-                          child: const Text(
-                            'Lưu giao dịch',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionForm(
+    BuildContext context,
+    String type,
+    Color primaryBlue,
+    Color lightBlue,
+  ) {
+    // Chỉ hiển thị form nếu đúng tab
+    if (_selectedType != type) {
+      return const SizedBox.shrink();
+    }
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Card số dư ví
+            Card(
+              color: lightBlue,
+              elevation: 6,
+              shadowColor: primaryBlue.withOpacity(0.2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Số dư ví',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 10),
+                    Text(
+                      NumberFormat('#,###', 'en_US').format(_walletBalance) +
+                          ' VND',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: primaryBlue,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+            ),
+            const SizedBox(height: 24),
+            // Tên ví
+            _buildLabel('Chọn tên ví'),
+            const SizedBox(height: 6),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: lightBlue,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonFormField<String>(
+                value: _selectedWalletName,
+                decoration: _inputDecoration(),
+                items:
+                    _walletNames.map<DropdownMenuItem<String>>((name) {
+                      return DropdownMenuItem<String>(
+                        value: name,
+                        child: Text(name),
+                      );
+                    }).toList(),
+                onChanged: _onWalletNameChanged,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Vui lòng chọn tên ví';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: 18),
+            // Tài khoản ví
+            _buildLabel('Chọn tài khoản ví'),
+            const SizedBox(height: 6),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: lightBlue,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonFormField<String>(
+                value: _selectedWalletAccount,
+                decoration: _inputDecoration(
+                  suffixIcon:
+                      _isLoadingAccounts
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : null,
+                ),
+                items:
+                    _filteredAccounts.map<DropdownMenuItem<String>>((account) {
+                      return DropdownMenuItem<String>(
+                        value: account['uniqueId'] as String,
+                        child: Text(account['tenTaiKhoan']),
+                      );
+                    }).toList(),
+                onChanged:
+                    _selectedWalletName != null
+                        ? _onWalletAccountChanged
+                        : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Vui lòng chọn tài khoản ví';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: 18),
+            // Danh mục
+            _buildLabel('Chọn danh mục'),
+            const SizedBox(height: 6),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: lightBlue,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                decoration: _inputDecoration(),
+                items:
+                    _categories
+                        .where(
+                          (category) => category['thuChi'] == _selectedType,
+                        )
+                        .map((category) {
+                          return DropdownMenuItem(
+                            value: category['maDanhMuc'].toString(),
+                            child: Text(category['tenDanhMuc']),
+                          );
+                        })
+                        .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 18),
+            // Số tiền
+            _buildLabel('Số tiền'),
+            const SizedBox(height: 6),
+            TextFormField(
+              controller: _amountController,
+              decoration: _inputDecoration(hintText: 'Nhập số tiền'),
+              keyboardType: TextInputType.number,
+              inputFormatters: [CurrencyInputFormatter()],
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Vui lòng nhập số tiền';
+                }
+                String cleanValue = value.replaceAll(RegExp(r'[^0-9]'), '');
+                if (double.tryParse(cleanValue) == null) {
+                  return 'Số tiền không hợp lệ';
+                }
+                final amount = double.parse(cleanValue);
+                if (amount <= 0) {
+                  return 'Số tiền phải lớn hơn 0';
+                }
+                if (_selectedType == 'Chi' && _selectedWalletAccount != null) {
+                  final selectedAccount = _filteredAccounts.firstWhere(
+                    (w) => w['uniqueId'] == _selectedWalletAccount,
+                    orElse: () => _filteredAccounts.first,
+                  );
+                  double currentBalance = selectedAccount['soDu'];
+                  if (amount > currentBalance) {
+                    return 'Số dư không đủ';
+                  }
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _noteController,
+              decoration: InputDecoration(
+                labelText: 'Ghi chú',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.blue[700]!),
+                ),
+                labelStyle: TextStyle(color: Colors.blue[700]),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _pickAndUploadImage,
+              icon: const Icon(Icons.image),
+              label: const Text('Chọn ảnh'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue[700],
+                foregroundColor: Colors.white,
+              ),
+            ),
+            if (_selectedImage != null) ...[
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  _selectedImage!,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _showConfirmationDialog,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Colors.blue[700],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Lưu giao dịch',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showTransactionSummary() {
+    String walletName =
+        _selectedWalletAccount != null
+            ? _filteredAccounts.firstWhere(
+              (w) => w['uniqueId'] == _selectedWalletAccount,
+              orElse: () => {'tenTaiKhoan': 'Không có tài khoản'},
+            )['tenTaiKhoan']
+            : 'Không có tài khoản';
+
+    String type = _selectedType;
+    String amount = _amountController.text;
+    String note = _noteController.text;
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Thông tin giao dịch'),
+            content: Text(
+              'Tài khoản: $walletName\nLoại: $type\nSố tiền: $amount\nGhi chú: $note',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Đóng'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _showConfirmationDialog() {
+    String walletName =
+        _selectedWalletAccount != null
+            ? _filteredAccounts.firstWhere(
+              (w) => w['uniqueId'] == _selectedWalletAccount,
+              orElse: () => {'tenTaiKhoan': 'Không có tài khoản'},
+            )['tenTaiKhoan']
+            : 'Không có tài khoản';
+
+    String type = _selectedType;
+    String amount = _amountController.text;
+    String note = _noteController.text;
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Xác nhận giao dịch'),
+            content: Text(
+              'Tài khoản: $walletName\nLoại: $type\nSố tiền: $amount\nGhi chú: $note\n\nBạn có muốn lưu giao dịch này?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Hủy'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _saveTransaction();
+                },
+                child: const Text('Xác nhận'),
+              ),
+            ],
+          ),
     );
   }
 
@@ -694,11 +618,19 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
       });
 
       try {
-        final selectedWallet = _wallets.firstWhere(
-          (w) => w['uniqueId'] == _selectedWallet,
+        if (_selectedWalletAccount == null) {
+          throw Exception('Vui lòng chọn tài khoản ví');
+        }
+
+        final selectedAccount = _filteredAccounts.firstWhere(
+          (w) => w['uniqueId'] == _selectedWalletAccount,
+          orElse: () => throw Exception('Không tìm thấy tài khoản đã chọn'),
         );
 
-        // Upload image first if exists
+        print('Selected account: $selectedAccount');
+
+        double currentBalance = selectedAccount['soDu']?.toDouble() ?? 0.0;
+
         String? imageUrl;
         if (_selectedImage != null) {
           try {
@@ -720,7 +652,28 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           }
         }
 
-        // Create transaction
+        String cleanAmount = _amountController.text.replaceAll(
+          RegExp(r'[^0-9]'),
+          '',
+        );
+        double amount = double.parse(cleanAmount);
+
+        if (_selectedType == 'Chi' && amount > currentBalance) {
+          throw Exception(
+            'Số dư không đủ. Số dư hiện tại: ${NumberFormat('#,###', 'en_US').format(currentBalance)} VND',
+          );
+        }
+
+        double newBalance =
+            _selectedType == 'Thu'
+                ? currentBalance + amount
+                : currentBalance - amount;
+
+        print('Current balance: $currentBalance');
+        print('Amount: $amount');
+        print('New balance: $newBalance');
+        print('Wallet maVi: ${selectedAccount['maVi']}');
+        print('Category ID: ${int.parse(_selectedCategory!)}');
         final response = await http.post(
           Uri.parse('https://10.0.2.2:7283/api/GiaoDich'),
           headers: {
@@ -729,12 +682,11 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           },
           body: json.encode({
             'maNguoiDung': widget.maKH,
-            'maVi': selectedWallet['maVi'],
+            'maVi': selectedAccount['maVi'],
             'maDanhMucNguoiDung': int.parse(_selectedCategory!),
-            'soTien': double.parse(_amountController.text),
-            'soTienCu': selectedWallet['soDu'],
-            'soTienMoi':
-                selectedWallet['soDu'] + double.parse(_amountController.text),
+            'soTien': amount,
+            'soTienCu': currentBalance,
+            'soTienMoi': newBalance,
             'ghiChu': _noteController.text,
             'ngayGiaoDich': DateTime.now().toIso8601String(),
             'loaiGiaoDich': _selectedType,
@@ -742,18 +694,28 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           }),
         );
 
+        print(
+          'Transaction request body: ${json.encode({'maNguoiDung': widget.maKH, 'maVi': selectedAccount['maVi'], 'maDanhMucNguoiDung': int.parse(_selectedCategory!), 'soTien': amount, 'soTienCu': currentBalance, 'soTienMoi': newBalance, 'ghiChu': _noteController.text, 'ngayGiaoDich': DateTime.now().toIso8601String(), 'loaiGiaoDich': _selectedType, 'maViNhan': null})}',
+        );
+
         if (response.statusCode == 200 || response.statusCode == 201) {
           final giaoDichData = json.decode(response.body);
           print('Giao dịch được tạo thành công: ${response.body}');
 
           try {
-            await _saveTransactionHistory(
-              giaoDichData['maGiaoDich'],
-              selectedWallet['soDu'],
-              selectedWallet['soDu'] + double.parse(_amountController.text),
+            // Cập nhật số dư ví trong cơ sở dữ liệu
+            await _updateWalletBalance(
+              selectedAccount['maVi'],
+              selectedAccount['tenTaiKhoan'],
+              newBalance,
             );
 
-            // Save image URL if exists
+            await _saveTransactionHistory(
+              giaoDichData['maGiaoDich'],
+              currentBalance,
+              newBalance,
+            );
+
             if (imageUrl != null) {
               await http.post(
                 Uri.parse('https://10.0.2.2:7283/api/AnhHoaDon'),
@@ -768,7 +730,24 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
               );
             }
 
-            await _loadWallets();
+            // Cập nhật số dư trong danh sách tài khoản local
+            setState(() {
+              final accountIndex = _filteredAccounts.indexWhere(
+                (w) => w['uniqueId'] == _selectedWalletAccount,
+              );
+              if (accountIndex != -1) {
+                _filteredAccounts[accountIndex]['soDu'] = newBalance;
+                _walletBalance = newBalance;
+              }
+
+              // Cập nhật trong _allWallets
+              final allAccountIndex = _allWallets.indexWhere(
+                (w) => w['uniqueId'] == _selectedWalletAccount,
+              );
+              if (allAccountIndex != -1) {
+                _allWallets[allAccountIndex]['soDu'] = newBalance;
+              }
+            });
 
             if (widget.onTransactionAdded != null) {
               widget.onTransactionAdded!();
@@ -792,12 +771,12 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
               });
             }
           } catch (e) {
-            print('Lỗi khi lưu lịch sử giao dịch: $e');
+            print('Lỗi khi lưu lịch sử giao dịch hoặc cập nhật số dư: $e');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Giao dịch đã được tạo nhưng lỗi khi lưu lịch sử: $e',
+                    'Giao dịch đã được tạo nhưng lỗi khi cập nhật: $e',
                   ),
                   backgroundColor: Colors.orange,
                 ),
@@ -823,6 +802,49 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           });
         }
       }
+    }
+  }
+
+  // Sửa method _updateWalletBalance để sử dụng đúng API
+  Future<void> _updateWalletBalance(
+    int maVi,
+    String tenTaiKhoan,
+    double newBalance,
+  ) async {
+    try {
+      final response = await http.put(
+        Uri.parse(
+          'https://10.0.2.2:7283/api/ViNguoiDung/${widget.maKH}/$maVi/${Uri.encodeComponent(tenTaiKhoan)}',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'tenTaiKhoan': tenTaiKhoan,
+          'maLoaiTien': 1, // Mặc định luôn là 1
+          'dienGiai': 'Cập nhật số dư từ giao dịch',
+          'soDu': newBalance,
+        }),
+      );
+
+      print(
+        'Update balance request: maVi=$maVi, tenTaiKhoan=$tenTaiKhoan, newBalance=$newBalance',
+      );
+      print(
+        'Update balance request body: ${json.encode({'tenTaiKhoan': tenTaiKhoan, 'maLoaiTien': 1, 'dienGiai': 'Cập nhật số dư từ giao dịch', 'soDu': newBalance})}',
+      );
+      print('Update balance response status: ${response.statusCode}');
+      print('Update balance response body: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception(
+          'Lỗi khi cập nhật số dư ví: ${response.statusCode} - ${response.body}',
+        );
+      }
+    } catch (e) {
+      print('Lỗi khi cập nhật số dư ví: $e');
+      throw Exception('Lỗi khi cập nhật số dư ví: $e');
     }
   }
 
@@ -869,5 +891,81 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     _amountController.dispose();
     _noteController.dispose();
     super.dispose();
+  }
+  void _showCategorySelection(BuildContext context) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HangMucScreen(maKhachHang: widget.maKH),
+      ),
+    );
+    if (result != null && result is String) {
+      setState(() {
+        selectedCategory = result;
+      });
+    }
+  }
+
+  Widget _buildLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4.0, bottom: 2),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: Colors.blue[700],
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({String? hintText, Widget? suffixIcon}) {
+    return InputDecoration(
+      hintText: hintText,
+      filled: true,
+      fillColor: Colors.transparent,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.blue[100]!),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.blue[100]!),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.blue[700]!),
+      ),
+      labelStyle: TextStyle(color: Colors.blue[700]),
+      suffixIcon: suffixIcon,
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+    );
+  }
+}
+
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    String digitsOnly = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (digitsOnly.isEmpty) {
+      return const TextEditingValue();
+    }
+
+    final formatter = NumberFormat('#,###', 'en_US');
+    String formatted = formatter.format(int.parse(digitsOnly));
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
   }
 }

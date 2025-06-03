@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:qltncn/model/KhachHang/khachhang_service.dart';
 import 'package:qltncn/screens/s_Login/ThemThongTinKhachHang.dart';
 import 'package:qltncn/screens/s_Login/CapNhatMatKhauScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,25 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
   bool _isPasswordHidden = true;
   bool isLoading = false; // Biến trạng thái loading
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  void _loadSavedCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedUsername = prefs.getString('username');
+    final savedPassword = prefs.getString('password');
+
+    if (savedUsername != null && savedPassword != null) {
+      setState(() {
+        emailController.text = savedUsername;
+        passwordController.text = savedPassword;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -204,6 +224,11 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         if (isAuthenticated) {
+          // Lưu tài khoản vào SharedPreferences
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('username', username);
+          await prefs.setString('password', password);
+
           final maKH = await KhachHangService.fetchMaKHByMaTaiKhoan(matk);
           if (maKH == null) {
             Navigator.pushReplacement(
