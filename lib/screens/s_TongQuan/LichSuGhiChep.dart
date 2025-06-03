@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:qltncn/screens/services/cloudinary_service.dart';
-import 'TongQuan.dart'; 
+import 'TongQuan.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -24,7 +24,7 @@ class Transaction {
   final String? tenDanhMucNguoiDung;
   final double? soTienGiaoDich;
   final int? maVi;
-  final int? maDanhMucNguoiDung;
+  final String? maHangMuc;
 
   Transaction({
     required this.maLichSu,
@@ -40,7 +40,7 @@ class Transaction {
     this.tenDanhMucNguoiDung,
     this.soTienGiaoDich,
     this.maVi,
-    this.maDanhMucNguoiDung,
+    this.maHangMuc,
   });
 
   factory Transaction.fromJson(Map<String, dynamic> json) {
@@ -50,7 +50,6 @@ class Transaction {
       print('giaoDich data: ${json['giaoDich']}');
       print('vi data: ${json['giaoDich']?['vi']}');
       print('danhMucNguoiDung data: ${json['giaoDich']?['danhMucNguoiDung']}');
-
       return Transaction(
         maLichSu: json['maLichSu'] ?? 0,
         maGiaoDich: json['maGiaoDich'] ?? 0,
@@ -70,7 +69,7 @@ class Transaction {
                 ?.toString(),
         soTienGiaoDich: json['giaoDich']?['soTien']?.toDouble(),
         maVi: json['giaoDich']?['maVi'],
-        maDanhMucNguoiDung: json['giaoDich']?['maDanhMucNguoiDung'],
+        maHangMuc: json['giaoDich']?['maHangMuc'],
       );
     } catch (e) {
       print('Error parsing transaction: $e');
@@ -95,16 +94,20 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
   DateTime selectedDate = DateTime.now();
   bool showAllTransactions = false;
   Map<int, String> viNames = {};
-  Map<int, String> danhMucNames = {};
+  Map<String, String> danhMucNames = {};
   bool showBalance = false;
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final CloudinaryService _cloudinaryService = CloudinaryService();
 
+  List<Map<String, dynamic>> danhSachHangMuc = [];
+  String? selectedHangMuc; // Mã hạng mục được chọn
+
   @override
   void initState() {
     super.initState();
     fetchTransactions();
+    fetchDanhSachHangMuc();
   }
 
   Future<void> fetchViDetails(int maVi) async {
@@ -130,12 +133,12 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
     }
   }
 
-  Future<void> fetchDanhMucDetails(int maDanhMuc) async {
-    if (danhMucNames.containsKey(maDanhMuc)) return;
+  Future<void> fetchDanhMucDetails(String maHangMuc) async {
+    if (danhMucNames.containsKey(maHangMuc)) return;
 
     try {
       final response = await http.get(
-        Uri.parse('https://10.0.2.2:7283/api/DanhMucNguoiDung/$maDanhMuc'),
+        Uri.parse('https://10.0.2.2:7283/api/HangMuc/$maHangMuc'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -145,12 +148,12 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
-          danhMucNames[maDanhMuc] =
-              data['tenDanhMucNguoiDung']?.toString() ?? 'Không xác định';
+          danhMucNames[maHangMuc] =
+              data['tenhangmuc']?.toString() ?? 'Không xác định';
         });
       }
     } catch (e) {
-      print('Error fetching danh muc details: $e');
+      print('Error fetching hang muc details: $e');
     }
   }
 
@@ -181,8 +184,8 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
           if (transaction.maVi != null) {
             await fetchViDetails(transaction.maVi!);
           }
-          if (transaction.maDanhMucNguoiDung != null) {
-            await fetchDanhMucDetails(transaction.maDanhMucNguoiDung!);
+          if (transaction.maHangMuc != null) {
+            await fetchDanhMucDetails(transaction.maHangMuc!);
           }
         }
 
@@ -203,6 +206,26 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
         error = 'Lỗi kết nối: $e';
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> fetchDanhSachHangMuc() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://10.0.2.2:7283/api/HangMuc/user/${widget.maKH}'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          danhSachHangMuc = List<Map<String, dynamic>>.from(data);
+        });
+      }
+    } catch (e) {
+      print('Error fetching danh sách hạng mục: $e');
     }
   }
 
@@ -262,7 +285,7 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
 
   Future<void> _showEditDialog(Transaction transaction) async {
     _amountController.text = transaction.soTienGiaoDich?.toString() ?? '0';
-
+    selectedHangMuc = transaction.maHangMuc;
     return showDialog(
       context: context,
       builder:
@@ -297,7 +320,7 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Danh mục: ${danhMucNames[transaction.maDanhMucNguoiDung] ?? 'Đang tải...'}',
+                          'Danh mục: ${danhMucNames[transaction.maHangMuc] ?? 'Đang tải...'}',
                           style: const TextStyle(fontSize: 16),
                         ),
                         const SizedBox(height: 8),
@@ -353,6 +376,30 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
                         }
                       }
                       return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedHangMuc ?? transaction.maHangMuc,
+                    decoration: InputDecoration(
+                      labelText: 'Hạng mục',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                    ),
+                    items:
+                        danhSachHangMuc.map((hm) {
+                          return DropdownMenuItem<String>(
+                            value: hm['mahangmuc'],
+                            child: Text(hm['tenhangmuc']),
+                          );
+                        }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedHangMuc = value;
+                      });
                     },
                   ),
                 ],
@@ -430,8 +477,8 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
                               'maGiaoDich': transaction.maGiaoDich,
                               'maNguoiDung': widget.maKH,
                               'maVi': transaction.maVi,
-                              'maDanhMucNguoiDung':
-                                  transaction.maDanhMucNguoiDung,
+                              'maHangMuc':
+                                  selectedHangMuc ?? transaction.maHangMuc,
                               'soTien': newAmount,
                               'soTienCu': newSoTienCu,
                               'soTienMoi': newSoTienMoi,
@@ -900,12 +947,15 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
                                       ? Colors.green
                                       : Colors.red,
                             ),
-                            title: Text(transaction.ghiChu),
+                            title: Text(
+                              '${transaction.tenDanhMucNguoiDung ?? danhMucNames[transaction.maHangMuc] ?? 'Không có danh mục'}'
+                              '${transaction.ghiChu.isNotEmpty ? ' - ${transaction.ghiChu}' : ''}',
+                            ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Ví: ${viNames[transaction.maVi] ?? 'Đang tải...'} - Danh mục: ${danhMucNames[transaction.maDanhMucNguoiDung] ?? 'Đang tải...'}',
+                                  'Ví: ${viNames[transaction.maVi] ?? 'Đang tải...'} - Danh mục: ${danhMucNames[transaction.maHangMuc] ?? 'Đang tải...'}',
                                 ),
                                 Text(
                                   'Thời gian: ${DateFormat('dd/MM/yyyy HH:mm').format(transaction.thoiGian)}',

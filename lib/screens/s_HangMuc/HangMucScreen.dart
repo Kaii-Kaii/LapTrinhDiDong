@@ -7,8 +7,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 const Color kPrimaryColor = Color(0xFF03A9F4); // Xanh dương giống ảnh
 
 class HangMucScreen extends StatefulWidget {
-  final String maKhachHang;
-  const HangMucScreen({Key? key, required this.maKhachHang}) : super(key: key);
+  final String maNguoiDung;
+  const HangMucScreen({Key? key, required this.maNguoiDung}) : super(key: key);
 
   @override
   State<HangMucScreen> createState() => _HangMucScreenState();
@@ -33,10 +33,10 @@ class _HangMucScreenState extends State<HangMucScreen>
       isLoading = true;
     });
     try {
-      print('maKhachHang: ${widget.maKhachHang}');
+      print('maNguoiDung: ${widget.maNguoiDung}');
       final response = await http.get(
         Uri.parse(
-          'https://10.0.2.2:7283/api/HangMuc/bykhachhang/${widget.maKhachHang}',
+          'https://10.0.2.2:7283/api/HangMuc/bykhachhang/${widget.maNguoiDung}',
         ),
       );
       print(response.body);
@@ -92,7 +92,7 @@ class _HangMucScreenState extends State<HangMucScreen>
     final url = Uri.parse('https://10.0.2.2:7283/api/HangMuc/add');
     final body = jsonEncode({
       'MAHANGMUC': '',
-      'MAKH': widget.maKhachHang,
+      'MaNguoiDung': widget.maNguoiDung,
       'TENHANGMUC': ten,
       'ICON': icon,
       'LOAI': loai,
@@ -576,7 +576,7 @@ class _HangMucScreenState extends State<HangMucScreen>
     final url = Uri.parse('https://10.0.2.2:7283/api/HangMuc/update');
     final body = jsonEncode({
       'MAHANGMUC': maHangMuc,
-      'MAKH': widget.maKhachHang,
+      'MaNguoiDung': widget.maNguoiDung,
       'TENHANGMUC': ten,
       'ICON': icon,
       'LOAI': loai,
@@ -836,7 +836,10 @@ class _HangMucScreenState extends State<HangMucScreen>
             ],
           ),
           onTap: () {
-            // TODO: Chọn hạng mục
+            Navigator.pop(context, {
+              'maDanhMuc': hm.maHangMuc,
+              'tenDanhMuc': hm.tenHangMuc,
+            });
           },
         );
       },
@@ -847,6 +850,7 @@ class _HangMucScreenState extends State<HangMucScreen>
     final url = Uri.parse('https://10.0.2.2:7283/api/HangMuc/updateHayDung');
     final body = jsonEncode({
       'MAHANGMUC': hm.maHangMuc,
+      'MaNguoiDung': hm.maNguoiDung, // <-- thêm dòng này
       'HAYDUNG': !hm.hayDung,
     });
     try {
@@ -872,7 +876,7 @@ class _HangMucScreenState extends State<HangMucScreen>
 
 class HangMuc {
   final String maHangMuc;
-  final String maKhachHang;
+  final String maNguoiDung;
   final String tenHangMuc;
   final String icon;
   final String loai;
@@ -880,7 +884,7 @@ class HangMuc {
 
   HangMuc({
     required this.maHangMuc,
-    required this.maKhachHang,
+    required this.maNguoiDung,
     required this.tenHangMuc,
     required this.icon,
     required this.loai,
@@ -890,7 +894,7 @@ class HangMuc {
   factory HangMuc.fromJson(Map<String, dynamic> json) {
     return HangMuc(
       maHangMuc: json['mahangmuc'],
-      maKhachHang: json['makh'],
+      maNguoiDung: json['maNguoiDung'],
       tenHangMuc: json['tenhangmuc'],
       icon: json['icon'] ?? '',
       loai: json['loai'],

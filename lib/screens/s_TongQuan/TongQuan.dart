@@ -33,7 +33,7 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     with WidgetsBindingObserver {
   //final DatabaseHelper _dbHelper = DatabaseHelper();
   Map<String, double> incomeData = {};
-  Map<String, double> expenseData = {};
+  Map<String, Map<String, dynamic>> expenseData = {};
   double totalIncome = 0;
   double totalExpense = 0;
   int touchedIndex = -1;
@@ -156,6 +156,7 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     ) {
       _refreshData();
     });
+    fetchExpenseData();
   }
 
   void _onFocusChange() {
@@ -280,6 +281,32 @@ class _TongQuanScreenState extends State<TongQuanScreen>
       }
     } catch (e) {
       print('Error loading transaction data: $e');
+    }
+  }
+
+  Future<void> fetchExpenseData() async {
+    final response = await http.get(
+      Uri.parse('https://10.0.2.2:7283/api/HangMuc/user/$maKH'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      // Chỉ lấy loại chi và có hạn mức
+      final Map<String, Map<String, dynamic>> temp = {};
+      for (var hm in data) {
+        if (hm['loai'] == 'chi' && hm['toida'] != null) {
+          temp[hm['tenhangmuc']] = {
+            'toida': hm['toida'],
+            'sotienhientai': hm['sotienhientai'] ?? 0,
+          };
+        }
+      }
+      setState(() {
+        expenseData = temp;
+      });
     }
   }
 
@@ -588,11 +615,11 @@ class _TongQuanScreenState extends State<TongQuanScreen>
                   padding: EdgeInsets.all(16),
                   children: [
                     if (cardVisibility['Tình hình thu chi']!) ...[
-                      _buildChartCard("Tình hình thu chi", incomeData),
+                      _buildIncomeChartCard("Tình hình thu chi", incomeData),
                       SizedBox(height: 16),
                     ],
                     if (cardVisibility['Hạn mức chi']!) ...[
-                      _buildChartCard("Hạn mức chi", expenseData),
+                      _buildExpenseChartCard("Hạn mức chi", expenseData),
                       SizedBox(height: 16),
                     ],
                     if (cardVisibility['Du lịch']!) ...[
@@ -645,7 +672,7 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     );
   }
 
-  Widget _buildChartCard(String title, Map<String, double> data) {
+  Widget _buildIncomeChartCard(String title, Map<String, double> data) {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -674,254 +701,187 @@ class _TongQuanScreenState extends State<TongQuanScreen>
                   color: Colors.black87,
                 ),
               ),
-              if (title == "Tình hình thu chi")
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => LichSuGhiChep(maKH: widget.maKH),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.history, size: 18),
-                  label: Text(
-                    "Lịch sử ghi chép",
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.blue,
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  ),
-                ),
-            ],
-          ),
-          if (title == "Tình hình thu chi") ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.blue),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedTimePeriod,
-                    isExpanded: true,
-                    icon: Icon(Icons.arrow_drop_down, color: Colors.blue),
-                    items:
-                        [
-                          "Hôm nay",
-                          "Tuần này",
-                          "Tháng này",
-                          "Quý này",
-                          "Năm nay",
-                        ].map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                              ),
-                              child: Text(
-                                value,
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        _updateDateRange(newValue);
-                      }
-                    },
-                  ),
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LichSuGhiChep(maKH: widget.maKH),
+                    ),
+                  );
+                },
+                icon: Icon(Icons.history, size: 18),
+                label: Text("Lịch sử ghi chép", style: TextStyle(fontSize: 14)),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.blue,
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 ),
               ),
+            ],
+          ),
+          // ... Bạn có thể thêm chart hoặc các widget khác cho thu chi ở đây ...
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSummaryCard(
+                  title: "Thu",
+                  amount: totalIncome,
+                  icon: Icons.arrow_downward,
+                  color: Colors.green,
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: _buildSummaryCard(
+                  title: "Chi",
+                  amount: totalExpense,
+                  icon: Icons.arrow_upward,
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
             ),
-            SizedBox(height: 16),
-            // Add income and expense summary cards
-            Row(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: _buildSummaryCard(
-                    title: "Thu",
-                    amount: totalIncome,
-                    icon: Icons.arrow_downward,
-                    color: Colors.green,
+                Text(
+                  "Số dư",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[700],
                   ),
                 ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: _buildSummaryCard(
-                    title: "Chi",
-                    amount: totalExpense,
-                    icon: Icons.arrow_upward,
-                    color: Colors.red,
+                Text(
+                  "${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(totalIncome - totalExpense)}",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color:
+                        (totalIncome - totalExpense) >= 0
+                            ? Colors.green
+                            : Colors.red,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 16),
-            // Add balance card
-            Container(
-              padding: EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Số dư",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[700],
-                    ),
-                  ),
-                  Text(
-                    "${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(totalIncome - totalExpense)}",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color:
-                          (totalIncome - totalExpense) >= 0
-                              ? Colors.green
-                              : Colors.red,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          if (data.isEmpty && title == "Hạn mức chi")
-            Container(
-              height: 200,
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Bạn chưa có hạn mức chi nào",
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ThemHanMucChi(),
-                        ),
-                      );
-                    },
-                    icon: Icon(Icons.add),
-                    label: Text("Thêm hạn mức chi"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else if (data.isNotEmpty)
-            SizedBox(height: 200, child: PieChart(_generatePieChartData(data))),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryCard({
-    required String title,
-    required double amount,
-    required IconData icon,
-    required Color color,
-  }) {
+  // Đổi tên hàm cũ thành _buildExpenseChartCard
+  Widget _buildExpenseChartCard(
+    String title,
+    Map<String, Map<String, dynamic>> data,
+  ) {
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
           Text(
-            NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(amount),
+            title,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: Colors.black87,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  PieChartData _generatePieChartData(Map<String, double> data) {
-    final random = Random();
-    List<Color> colors = List.generate(
-      data.length,
-      (index) => availableColors[random.nextInt(availableColors.length)],
-    );
-
-    return PieChartData(
-      sections: List.generate(data.length, (index) {
-        String category = data.keys.elementAt(index);
-        double value = data.values.elementAt(index);
-        return PieChartSectionData(
-          value: value,
-          title: "$category\n${value.toStringAsFixed(2)} đ",
-          color: colors[index],
-          radius: touchedIndex == index ? 70 : 60,
-          titleStyle: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+          SizedBox(height: 8),
+          // Luôn hiển thị nút Thêm hạn mức chi
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ThemHanMucChi(maKH: maKH),
+                  ),
+                );
+              },
+              icon: Icon(Icons.add),
+              label: Text("Thêm hạn mức chi"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
           ),
-        );
-      }),
-      sectionsSpace: 2,
-      centerSpaceRadius: 40,
-      pieTouchData: PieTouchData(
-        touchCallback: (FlTouchEvent event, pieTouchResponse) {
-          setState(() {
-            if (!event.isInterestedForInteractions ||
-                pieTouchResponse == null ||
-                pieTouchResponse.touchedSection == null) {
-              touchedIndex = -1;
-              return;
-            }
-            touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-          });
-        },
+          SizedBox(height: 8),
+          if (data.isEmpty)
+            Container(
+              height: 100,
+              alignment: Alignment.center,
+              child: Text(
+                "Bạn chưa có hạn mức chi nào",
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              ),
+            )
+          else
+            ...data.entries.map((entry) {
+              final toida = entry.value['toida'];
+              final sotienhientai = entry.value['sotienhientai'];
+              if (toida != null) {
+                return Container(
+                  margin: EdgeInsets.only(bottom: 12),
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Hạn mức (tối đa): ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(toida)}',
+                      ),
+                      Text(
+                        'Đã chi: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(sotienhientai ?? 0)}',
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                return SizedBox.shrink();
+              }
+            }).toList(),
+        ],
       ),
     );
   }
@@ -1388,6 +1348,49 @@ class _TongQuanScreenState extends State<TongQuanScreen>
               "Hiện tại bạn không có khoản cho vay và còn nợ nào",
               style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required String title,
+    required double amount,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 28),
+          SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              SizedBox(height: 4),
+              Text(
+                NumberFormat.currency(
+                  locale: 'vi_VN',
+                  symbol: '₫',
+                ).format(amount),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: color,
+                ),
+              ),
+            ],
           ),
         ],
       ),

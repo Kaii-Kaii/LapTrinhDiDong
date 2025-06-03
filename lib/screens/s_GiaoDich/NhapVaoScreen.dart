@@ -39,6 +39,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
   final CloudinaryService _cloudinaryService = CloudinaryService();
   File? _selectedImage;
   String? _imageUrl;
+  String? _selectedCategoryName; // Tên danh mục được chọn
 
   @override
   void initState() {
@@ -163,9 +164,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
   Future<void> _loadCategories() async {
     try {
       final response = await http.get(
-        Uri.parse(
-          'https://10.0.2.2:7283/api/DanhMucNguoiDung/user/${widget.maKH}',
-        ),
+        Uri.parse('https://10.0.2.2:7283/api/HangMuc/user/${widget.maKH}'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -181,7 +180,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           _categories =
               data.map((category) {
                 return {
-                  'maDanhMuc': category['maDanhMucNguoiDung'],
+                  'maDanhMuc': category['maHangMuc'],
                   'tenDanhMuc': category['tenDanhMucNguoiDung'],
                   'thuChi': category['thuChi'],
                 };
@@ -427,31 +426,48 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
             // Danh mục
             _buildLabel('Chọn danh mục'),
             const SizedBox(height: 6),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: lightBlue,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                decoration: _inputDecoration(),
-                items:
-                    _categories
-                        .where(
-                          (category) => category['thuChi'] == _selectedType,
-                        )
-                        .map((category) {
-                          return DropdownMenuItem(
-                            value: category['maDanhMuc'].toString(),
-                            child: Text(category['tenDanhMuc']),
-                          );
-                        })
-                        .toList(),
-                onChanged: (value) {
+            InkWell(
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => HangMucScreen(maNguoiDung: widget.maKH),
+                  ),
+                );
+                if (result != null && result is Map<String, dynamic>) {
                   setState(() {
-                    _selectedCategory = value;
+                    _selectedCategory = result['maDanhMuc'].toString();
+                    // Lưu luôn tên danh mục để hiển thị
+                    _selectedCategoryName = result['tenDanhMuc'] as String?;
                   });
-                },
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: lightBlue,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue[100]!),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      // Nếu đã chọn thì hiện tên, chưa chọn thì hiện mặc định
+                      _selectedCategoryName ?? 'Chọn danh mục',
+                      style: TextStyle(color: Colors.blue[700], fontSize: 16),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 18,
+                      color: Colors.grey,
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 18),
@@ -591,6 +607,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     String type = _selectedType;
     String amount = _amountController.text;
     String note = _noteController.text;
+    String categoryName = _selectedCategoryName ?? 'Chưa chọn';
 
     showDialog(
       context: context,
@@ -598,7 +615,12 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           (context) => AlertDialog(
             title: const Text('Xác nhận giao dịch'),
             content: Text(
-              'Tài khoản: $walletName\nLoại: $type\nSố tiền: $amount\nGhi chú: $note\n\nBạn có muốn lưu giao dịch này?',
+              'Tài khoản: $walletName\n'
+              'Loại: $type\n'
+              'Danh mục: $categoryName\n' // <-- Thêm dòng này
+              'Số tiền: $amount\n'
+              'Ghi chú: $note\n\n'
+              'Bạn có muốn lưu giao dịch này?',
             ),
             actions: [
               TextButton(
@@ -618,6 +640,15 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
   }
 
   Future<void> _saveTransaction() async {
+    if (_selectedCategory == null || _selectedCategory!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn danh mục!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
@@ -679,7 +710,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
         print('Amount: $amount');
         print('New balance: $newBalance');
         print('Wallet maVi: ${selectedAccount['maVi']}');
-        print('Category ID: ${int.parse(_selectedCategory!)}');
+        print('Category ID: $_selectedCategory');
 
         final response = await http.post(
           Uri.parse('https://10.0.2.2:7283/api/GiaoDich'),
@@ -690,7 +721,8 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
           body: json.encode({
             'maNguoiDung': widget.maKH,
             'maVi': selectedAccount['maVi'],
-            'maDanhMucNguoiDung': int.parse(_selectedCategory!),
+            'maHangMuc':
+                _selectedCategory, // <-- Đảm bảo đúng tên trường backend
             'soTien': amount,
             'soTienCu': currentBalance,
             'soTienMoi': newBalance,
@@ -702,7 +734,18 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
         );
 
         print(
-          'Transaction request body: ${json.encode({'maNguoiDung': widget.maKH, 'maVi': selectedAccount['maVi'], 'maDanhMucNguoiDung': int.parse(_selectedCategory!), 'soTien': amount, 'soTienCu': currentBalance, 'soTienMoi': newBalance, 'ghiChu': _noteController.text, 'ngayGiaoDich': DateTime.now().toIso8601String(), 'loaiGiaoDich': _selectedType, 'maViNhan': null})}',
+          'Transaction request body: ${json.encode({
+            'maNguoiDung': widget.maKH,
+            'maVi': selectedAccount['maVi'],
+            'maHangMuc': _selectedCategory, // <-- Đảm bảo đúng tên trường backend
+            'soTien': amount,
+            'soTienCu': currentBalance,
+            'soTienMoi': newBalance,
+            'ghiChu': _noteController.text,
+            'ngayGiaoDich': DateTime.now().toIso8601String(),
+            'loaiGiaoDich': _selectedType,
+            'maViNhan': null,
+          })}',
         );
 
         if (response.statusCode == 200 || response.statusCode == 201) {
@@ -722,6 +765,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
               currentBalance,
               newBalance,
             );
+            await _updateSoTienHienTai(_selectedCategory!);
 
             if (imageUrl != null) {
               await http.post(
@@ -904,7 +948,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => HangMucScreen(maKhachHang: widget.maKH),
+        builder: (context) => HangMucScreen(maNguoiDung: widget.maKH),
       ),
     );
     if (result != null && result is String) {
@@ -947,8 +991,26 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
       ),
       labelStyle: TextStyle(color: Colors.blue[700]),
       suffixIcon: suffixIcon,
-      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: 14,
+        horizontal: 16,
+      ), // <-- Đặt ở đây!
     );
+  }
+
+  Future<void> _updateSoTienHienTai(String maHangMuc) async {
+    final response = await http.put(
+      Uri.parse(
+        'https://10.0.2.2:7283/api/HangMuc/capnhat-sotienhientai/$maHangMuc',
+      ),
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    );
+    if (response.statusCode != 200) {
+      print('Lỗi cập nhật sotienhientai: ${response.body}');
+    }
   }
 }
 
