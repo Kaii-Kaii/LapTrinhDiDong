@@ -8,7 +8,9 @@ class ViNguoiDungService {
   static const String baseUrl = 'https://10.0.2.2:7283/api/ViNguoiDung';
 
   /// Lấy danh sách Ví người dùng theo mã khách hàng (maKhachHang)
-  static Future<List<ViNguoiDung>> fetchViNguoiDungByMaKhachHang(String maKhachHang) async {
+  static Future<List<ViNguoiDung>> fetchViNguoiDungByMaKhachHang(
+    String maKhachHang,
+  ) async {
     final List<ViNguoiDung> danhSachVi = [];
 
     try {
@@ -64,7 +66,8 @@ class ViNguoiDungService {
     required ViNguoiDung viNguoiDungMoi,
   }) async {
     try {
-      final url = '$baseUrl/$maNguoiDung/$maVi/${Uri.encodeComponent(tenTaiKhoanCu)}';
+      final url =
+          '$baseUrl/$maNguoiDung/$maVi/${Uri.encodeComponent(tenTaiKhoanCu)}';
 
       final body = jsonEncode({
         'tenTaiKhoan': viNguoiDungMoi.tenTaiKhoan,
@@ -92,28 +95,27 @@ class ViNguoiDungService {
 
   /// Kiểm tra tên ví trùng cho cùng loại ví, loại trừ ví đang sửa (theo maVi)
   /// Không cho nhập nếu: tên ví mới trùng tên ví cũ và là chính cái ví đó
-static Future<bool> kiemTraTenViTrung({
+  static Future<bool> kiemTraTenViTrung({
     required String maNguoiDung,
     required String tenTaiKhoan,
-    required int maViKhongTinh, // giữ nguyên kiểu int
+    required int maViKhongTinh,
   }) async {
     try {
       final danhSach = await fetchViNguoiDungByMaKhachHang(maNguoiDung);
 
       for (var vi in danhSach) {
-        if (vi.maVi == maViKhongTinh &&
-            vi.tenTaiKhoan.trim().toLowerCase() == tenTaiKhoan.trim().toLowerCase()) {
-          // Tên giống với ví đang sửa → không cần cập nhật
+        if (vi.maVi != maViKhongTinh && // chỉ kiểm tra với ví khác
+            vi.tenTaiKhoan.trim().toLowerCase() ==
+                tenTaiKhoan.trim().toLowerCase()) {
+          // Tên trùng với ví khác
           return true;
         }
       }
 
-      return false; // Không trùng với chính ví đang sửa thì được phép cập nhật
+      return false; // Không trùng với ví nào khác thì hợp lệ
     } catch (e) {
       print('Lỗi kiểm tra trùng tên ví: $e');
       return false;
     }
   }
-
-
 }
