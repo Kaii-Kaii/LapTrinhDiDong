@@ -13,10 +13,10 @@ Future<TaiKhoan?> fetchTaiKhoan(String maKH) async {
       List<dynamic> data = jsonDecode(response.body);
 
       for (var item in data) {
-        String accountId = item['mataikhoan'].trim();
-        // Kiểm tra nếu mã tài khoản trùng với maKH hoặc hai mã bắt đầu giống nhau
+        String accountId = item['khachHang'].trim();
         if (accountId == maKH || accountId.substring(2) == maKH.substring(2)) {
-          return TaiKhoan.fromJson(item);
+          final taiKhoan = TaiKhoan.fromJson(item);
+          return taiKhoan;
         }
       }
 
@@ -28,3 +28,29 @@ Future<TaiKhoan?> fetchTaiKhoan(String maKH) async {
     throw Exception('Failed to load data: $e');
   }
 }
+Future<TaiKhoan?> fetchTaiKhoanByMaTaiKhoan(String maTaiKhoan) async {
+  try {
+    final response = await http.get(
+      Uri.parse('https://10.0.2.2:7283/api/TaiKhoan'),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body);
+
+      for (var item in data) {
+        if (item['mataikhoan']?.trim() == maTaiKhoan.trim()) {
+          return TaiKhoan.fromJson(item);
+        }
+      }
+
+      return null; // Không tìm thấy tài khoản
+    } else {
+      throw Exception('Failed to load data: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Lỗi fetchTaiKhoanByMaTaiKhoan: $e');
+    return null;
+  }
+}
+

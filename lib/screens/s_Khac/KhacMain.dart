@@ -110,7 +110,7 @@ class KhacMain extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildUserInfo(),
+            _buildUserInfo(maKH),
             _buildPremiumBanner(),
             _buildPointAndCode(),
             _buildSection(context, "Tính năng", tinhNangList),
@@ -124,9 +124,29 @@ class KhacMain extends StatelessWidget {
     );
   }
 
-  Widget _buildUserInfo() {
+ Future<TaiKhoan?> getTaiKhoanFromMaKH(String maKH) async {
+    try {
+      final maTaiKhoan = await KhachHangService.fetchMaTaiKhoanByMaKH(maKH);
+      if (maTaiKhoan == null) {
+        print('Không tìm thấy maTaiKhoan cho maKH: $maKH');
+        return null;
+      }
+
+      final taiKhoan = await fetchTaiKhoanByMaTaiKhoan(maTaiKhoan);
+      if (taiKhoan == null) {
+        print('Không tìm thấy thông tin TaiKhoan cho maTaiKhoan: $maTaiKhoan');
+      }
+      return taiKhoan;
+    } catch (e) {
+      print('Lỗi trong getTaiKhoanFromMaKH: $e');
+      return null;
+    }
+  }
+
+
+  Widget _buildUserInfo(String maKH) {
     return FutureBuilder<TaiKhoan?>(
-      future: fetchTaiKhoan(maKH),
+      future: getTaiKhoanFromMaKH(maKH),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Padding(
@@ -146,6 +166,7 @@ class KhacMain extends StatelessWidget {
         }
 
         final taiKhoan = snapshot.data!;
+
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           color: Colors.white,
@@ -185,6 +206,7 @@ class KhacMain extends StatelessWidget {
       },
     );
   }
+
 
   Widget _buildPremiumBanner() {
     return Container(
@@ -278,7 +300,7 @@ class KhacMain extends StatelessWidget {
     return Expanded(
       child: Container(
         height: 60,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -286,14 +308,29 @@ class KhacMain extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Icon(icon, color: iconColor),
-                const SizedBox(width: 8),
-                Text(label),
-              ],
+            Flexible(
+              child: Row(
+                children: [
+                  Icon(icon, color: iconColor),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
