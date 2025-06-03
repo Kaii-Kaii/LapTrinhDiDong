@@ -14,11 +14,13 @@ class TaikhoanMain extends StatefulWidget {
   State<TaikhoanMain> createState() => _TaikhoanMainState();
 }
 
-class _TaikhoanMainState extends State<TaikhoanMain> with SingleTickerProviderStateMixin {
+class _TaikhoanMainState extends State<TaikhoanMain>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   // GlobalKey để truy cập hàm reload danh sách ví trong TabTaiKhoan
-  final GlobalKey<TabTaiKhoanState> _taiKhoanKey = GlobalKey<TabTaiKhoanState>();
+  final GlobalKey<TabTaiKhoanState> _taiKhoanKey =
+      GlobalKey<TabTaiKhoanState>();
 
   @override
   void initState() {
@@ -34,10 +36,7 @@ class _TaikhoanMainState extends State<TaikhoanMain> with SingleTickerProviderSt
         centerTitle: true,
         title: const Text(
           'Tài khoản',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -68,18 +67,25 @@ class _TaikhoanMainState extends State<TaikhoanMain> with SingleTickerProviderSt
             await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ThemTaiKhoanScreen(
-                  maKH: widget.maKH,
-                  onAccountAdded: () {
-                    _taiKhoanKey.currentState?.loadDanhSachVi();
-                  },
-                ),
+                builder:
+                    (_) => ThemTaiKhoanScreen(
+                      maKH: widget.maKH,
+                      onAccountAdded: () {
+                        _taiKhoanKey.currentState?.loadDanhSachVi();
+                      },
+                    ),
               ),
             );
           } else if (_tabController.index == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const ThemSoTietKiemScreen()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ThemSoTietKiemScreen()),
+            );
           } else if (_tabController.index == 2) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const ThemTichLuyScreen()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ThemTichLuyScreen()),
+            );
           }
         },
       ),

@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import '../s_TongQuan/TongQuan.dart';
-
+import 'package:qltncn/screens/s_HangMuc/HangMucScreen.dart';
 
 class NhapVaoScreen extends StatefulWidget {
   final String maKH;
@@ -179,7 +179,6 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
           _categories =
-
               data.map((category) {
                 return {
                   'maDanhMuc': category['maDanhMucNguoiDung'],
@@ -218,6 +217,13 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
               ),
             ],
           ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Nhập thành công!'),
+        backgroundColor: Colors.blue,
+      ),
     );
   }
 
@@ -674,6 +680,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
         print('New balance: $newBalance');
         print('Wallet maVi: ${selectedAccount['maVi']}');
         print('Category ID: ${int.parse(_selectedCategory!)}');
+
         final response = await http.post(
           Uri.parse('https://10.0.2.2:7283/api/GiaoDich'),
           headers: {
@@ -892,6 +899,7 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
     _noteController.dispose();
     super.dispose();
   }
+
   void _showCategorySelection(BuildContext context) async {
     final result = await Navigator.push(
       context,
