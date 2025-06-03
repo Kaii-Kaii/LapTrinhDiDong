@@ -180,14 +180,6 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     super.dispose();
   }
 
-  String getShortName(String fullName) {
-    List<String> parts = fullName.trim().split(RegExp(r'\s+'));
-    if (parts.length >= 2) {
-      return '${parts[parts.length - 2]} ${parts[parts.length - 1]}';
-    }
-    return fullName; // Nếu chỉ có 1 từ thì trả về nguyên gốc
-  }
-
   Future<void> _loadTransactionData() async {
     try {
       // Format dates for API with proper padding for month and day
@@ -309,6 +301,7 @@ class _TongQuanScreenState extends State<TongQuanScreen>
           temp[hm['tenhangmuc']] = {
             'toida': hm['toida'],
             'sotienhientai': hm['sotienhientai'] ?? 0,
+            'mahangmuc': hm['mahangmuc'], // Thêm dòng này
           };
         }
       }
@@ -484,7 +477,7 @@ class _TongQuanScreenState extends State<TongQuanScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Chào ${getShortName(hoTenKhachHang ?? userName)}!",
+                          "Chào ${hoTenKhachHang ?? userName}!",
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -810,39 +803,40 @@ class _TongQuanScreenState extends State<TongQuanScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ThemHanMucChi(maKH: maKH),
-                    ),
-                  );
-                },
-                icon: Icon(Icons.add),
-                label: Text("Thêm hạn mức"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
           ),
-          SizedBox(height: 12),
+          SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                // Chờ khi quay lại từ màn hình thêm hạn mức thì tự động load lại
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ThemHanMucChi(maKH: maKH),
+                  ),
+                );
+                await fetchExpenseData();
+              },
+              icon: Icon(Icons.add),
+              label: Text("Thêm hạn mức chi"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 8),
           if (data.isEmpty)
             Container(
               height: 100,
@@ -855,89 +849,156 @@ class _TongQuanScreenState extends State<TongQuanScreen>
           else
             ...data.entries.map((entry) {
               final toida = entry.value['toida'];
-              final sotienhientai = entry.value['sotienhientai'] ?? 0;
-              final percent =
-                  toida > 0 ? (sotienhientai / toida).clamp(0.0, 1.0) : 0.0;
-              Color progressColor;
-              if (percent < 0.7) {
-                progressColor = Colors.green;
-              } else if (percent < 1.0) {
-                progressColor = Colors.orange;
-              } else {
-                progressColor = Colors.red;
+              final sotienhientai = entry.value['sotienhientai'];
+              final maHangMuc = entry.value['mahangmuc'];
+              double percent = 0;
+              if (toida != null && toida > 0) {
+                percent = (sotienhientai ?? 0) / toida;
+                if (percent > 1) percent = 1;
               }
+              bool isOver = (sotienhientai ?? 0) > (toida ?? 0);
+
               return Container(
-                margin: EdgeInsets.only(bottom: 16),
-                padding: EdgeInsets.all(14),
+                margin: EdgeInsets.only(bottom: 12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: progressColor.withOpacity(0.07),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: progressColor.withOpacity(0.2)),
+                  color:
+                      isOver
+                          ? Colors.red.withOpacity(0.08)
+                          : Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isOver ? Colors.red : Colors.blue.withOpacity(0.2),
+                    width: isOver ? 2 : 1,
+                  ),
                 ),
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      entry.key,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Đã chi: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(sotienhientai)}',
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
-                        ),
-                        Text(
-                          'Hạn mức: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(toida)}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                entry.key,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: isOver ? Colors.red : Colors.black,
+                                ),
+                              ),
+                              if (isOver)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 6.0),
+                                  child: Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.red,
+                                    size: 20,
+                                  ),
+                                ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: percent,
-                        minHeight: 10,
-                        backgroundColor: Colors.grey[200],
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          progressColor,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        "${(percent * 100).toStringAsFixed(0)}%",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: progressColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    if (percent >= 1.0)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Text(
-                          "Đã vượt hạn mức!",
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                          SizedBox(height: 4),
+                          Text(
+                            'Hạn mức: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(toida)}',
+                            style: TextStyle(
+                              color: isOver ? Colors.red : Colors.black87,
+                            ),
                           ),
-                        ),
+                          Text(
+                            'Đã chi: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(sotienhientai ?? 0)}',
+                            style: TextStyle(
+                              color: isOver ? Colors.red : Colors.black87,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          // Progress bar
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: LinearProgressIndicator(
+                              value: percent,
+                              minHeight: 10,
+                              backgroundColor: Colors.grey[300],
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isOver
+                                    ? Colors.red
+                                    : percent > 0.8
+                                    ? Colors.orange
+                                    : Colors.blue,
+                              ),
+                            ),
+                          ),
+                          if (isOver)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6.0),
+                              child: Text(
+                                "Bạn đã vượt quá hạn mức!",
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: Text('Xác nhận'),
+                                content: Text(
+                                  'Bạn có chắc muốn xóa hạn mức này không?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.pop(context, false),
+                                    child: Text('Hủy'),
+                                  ),
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.pop(context, true),
+                                    child: Text('Xóa'),
+                                  ),
+                                ],
+                              ),
+                        );
+                        if (confirm == true) {
+                          final response = await http.put(
+                            Uri.parse(
+                              'https://10.0.2.2:7283/api/HangMuc/capnhat-toida/$maHangMuc',
+                            ),
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Accept': 'application/json',
+                            },
+                            body: json.encode({'toida': null}),
+                          );
+                          if (response.statusCode == 200) {
+                            await fetchExpenseData();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Đã xóa hạn mức'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Lỗi khi xóa hạn mức'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
                   ],
                 ),
               );
