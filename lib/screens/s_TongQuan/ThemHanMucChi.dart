@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ThemHanMucChi extends StatefulWidget {
-  const ThemHanMucChi({super.key});
+  final String maKH; // Thêm dòng này
+
+  const ThemHanMucChi({super.key, required this.maKH}); // Sửa constructor
 
   @override
   _ThemHanMucChiState createState() => _ThemHanMucChiState();
@@ -11,21 +15,42 @@ class ThemHanMucChi extends StatefulWidget {
 class _ThemHanMucChiState extends State<ThemHanMucChi> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _amountController = TextEditingController();
-  String selectedCategory = '';
+  String? selectedCategory;
   DateTime selectedDate = DateTime.now();
   final DateFormat dateFormat = DateFormat('dd/MM/yyyy');
 
-  // Sample categories - replace with your actual categories
-  final List<String> categories = [
-    'Ăn uống',
-    'Mua sắm',
-    'Giải trí',
-    'Đi lại',
-    'Nhà cửa',
-    'Y tế',
-    'Giáo dục',
-    'Khác',
-  ];
+  List<Map<String, dynamic>> categories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCategories();
+  }
+
+  Future<void> fetchCategories() async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://10.0.2.2:7283/api/HangMuc/user/${widget.maKH}',
+        ), // Lấy theo MaNguoiDung
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          // Lọc chỉ lấy loại "chi" nếu cần:
+          categories = List<Map<String, dynamic>>.from(
+            data.where((hm) => hm['loai'] == 'chi'),
+          );
+        });
+      }
+    } catch (e) {
+      print('Error fetching categories: $e');
+    }
+  }
 
   void _selectDate(BuildContext context) async {
     DateTime? picked = await showDatePicker(
@@ -75,30 +100,49 @@ class _ThemHanMucChiState extends State<ThemHanMucChi> {
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    value: selectedCategory.isEmpty ? null : selectedCategory,
+                    value: selectedCategory,
                     isExpanded: true,
                     hint: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: Text('Chọn danh mục'),
                     ),
                     items:
-                        categories.map((String value) {
+                        categories.map((hm) {
                           return DropdownMenuItem<String>(
-                            value: value,
+                            value: hm['mahangmuc'],
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16.0,
                               ),
-                              child: Text(value),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    hm['tenhangmuc'],
+                                    style: TextStyle(
+                                      color:
+                                          hm['loai'] == 'chi'
+                                              ? Colors.red
+                                              : Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    '(${hm['loai'] == 'chi' ? 'Chi' : 'Thu'})',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         }).toList(),
                     onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          selectedCategory = newValue;
-                        });
-                      }
+                      setState(() {
+                        selectedCategory = newValue;
+                      });
                     },
                   ),
                 ),
@@ -146,50 +190,43 @@ class _ThemHanMucChiState extends State<ThemHanMucChi> {
               SizedBox(height: 16),
 
               // Date Selection
-              Text(
-                'Thời gian',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () => _selectDate(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.blue,
-                  minimumSize: Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(color: Colors.blue),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(dateFormat.format(selectedDate)),
-                    Icon(Icons.calendar_today),
-                  ],
-                ),
-              ),
-              SizedBox(height: 32),
 
               // Save Button
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState!.validate() &&
-                      selectedCategory.isNotEmpty) {
-                    // TODO: Save the spending limit to database
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Đã thêm hạn mức chi thành công'),
-                        backgroundColor: Colors.green,
+                      selectedCategory != null) {
+                    final response = await http.put(
+                      Uri.parse(
+                        'https://10.0.2.2:7283/api/HangMuc/capnhat-toida/$selectedCategory',
                       ),
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                      },
+                      body: json.encode({
+                        'toida': double.parse(_amountController.text),
+                      }),
                     );
-                  } else if (selectedCategory.isEmpty) {
+                    print('Status: ${response.statusCode}');
+                    print('Body: ${response.body}');
+                    if (response.statusCode == 200) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Đã thêm hạn mức chi thành công'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Lỗi khi lưu hạn mức'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  } else if (selectedCategory == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Vui lòng chọn danh mục'),
