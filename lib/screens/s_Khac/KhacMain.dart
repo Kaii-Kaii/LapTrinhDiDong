@@ -10,12 +10,18 @@ import 'package:qltncn/screens/s_Khac/TienIch/TinhThueThuNhapCaNhanScreen.dart';
 import 'package:qltncn/screens/s_Khac/TienIch/TinhLaiVayScreen.dart';
 import 'package:qltncn/screens/s_Khac/TienIch/TinhLaiTienGui.dart';
 import 'package:qltncn/screens/s_Khac/TienIch/ChiaTien.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qltncn/screens/s_Login/DangNhap.dart';
 
-class KhacMain extends StatelessWidget {
+class KhacMain extends StatefulWidget {
   final String maKH;
+  const KhacMain({super.key, required this.maKH});
 
-  KhacMain({super.key, required this.maKH});
+  @override
+  State<KhacMain> createState() => _KhacMainState();
+}
 
+class _KhacMainState extends State<KhacMain> {
   final List<GirdItem> tinhNangList = [
     GirdItem(
       title: 'Hạn mức chi',
@@ -110,7 +116,7 @@ class KhacMain extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildUserInfo(maKH),
+            _buildUserInfo(widget.maKH),
             _buildPremiumBanner(),
             _buildPointAndCode(),
             _buildSection(context, "Tính năng", tinhNangList),
@@ -124,7 +130,7 @@ class KhacMain extends StatelessWidget {
     );
   }
 
- Future<TaiKhoan?> getTaiKhoanFromMaKH(String maKH) async {
+  Future<TaiKhoan?> getTaiKhoanFromMaKH(String maKH) async {
     try {
       final maTaiKhoan = await KhachHangService.fetchMaTaiKhoanByMaKH(maKH);
       if (maTaiKhoan == null) {
@@ -142,7 +148,6 @@ class KhacMain extends StatelessWidget {
       return null;
     }
   }
-
 
   Widget _buildUserInfo(String maKH) {
     return FutureBuilder<TaiKhoan?>(
@@ -207,7 +212,6 @@ class KhacMain extends StatelessWidget {
     );
   }
 
-
   Widget _buildPremiumBanner() {
     return Container(
       width: double.infinity,
@@ -240,7 +244,7 @@ class KhacMain extends StatelessWidget {
   Widget _buildPointAndCode() {
     return FutureBuilder<KhachHang?>(
       future: KhachHangService.fetchKhachHangByMaKH(
-        maKH,
+        widget.maKH,
       ), // Lấy thông tin khách hàng
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -481,6 +485,20 @@ class KhacMain extends StatelessWidget {
           () {},
         ),
         _buildSettingsTile(Icons.info_outline, "Trợ giúp và thông tin", () {}),
+        // đăng xuất
+        _buildSettingsTile(Icons.logout, "Đăng xuất", () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('username');
+          await prefs.remove('password');
+          // Xóa thêm các thông tin khác nếu cần
+          if (Navigator.canPop(context)) {
+            Navigator.popUntil(context, (route) => route.isFirst);
+          }
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+          );
+        }),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

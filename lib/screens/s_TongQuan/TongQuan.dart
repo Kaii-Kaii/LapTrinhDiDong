@@ -179,7 +179,7 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     _transactionUpdateSubscription?.cancel();
     super.dispose();
   }
-  
+
   String getShortName(String fullName) {
     List<String> parts = fullName.trim().split(RegExp(r'\s+'));
     if (parts.length >= 2) {
@@ -810,39 +810,39 @@ class _TongQuanScreenState extends State<TongQuanScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 8),
-          // Luôn hiển thị nút Thêm hạn mức chi
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ThemHanMucChi(maKH: maKH),
-                  ),
-                );
-              },
-              icon: Icon(Icons.add),
-              label: Text("Thêm hạn mức chi"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
               ),
-            ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ThemHanMucChi(maKH: maKH),
+                    ),
+                  );
+                },
+                icon: Icon(Icons.add),
+                label: Text("Thêm hạn mức"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 12),
           if (data.isEmpty)
             Container(
               height: 100,
@@ -855,39 +855,92 @@ class _TongQuanScreenState extends State<TongQuanScreen>
           else
             ...data.entries.map((entry) {
               final toida = entry.value['toida'];
-              final sotienhientai = entry.value['sotienhientai'];
-              if (toida != null) {
-                return Container(
-                  margin: EdgeInsets.only(bottom: 12),
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.withOpacity(0.2)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.key,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+              final sotienhientai = entry.value['sotienhientai'] ?? 0;
+              final percent =
+                  toida > 0 ? (sotienhientai / toida).clamp(0.0, 1.0) : 0.0;
+              Color progressColor;
+              if (percent < 0.7) {
+                progressColor = Colors.green;
+              } else if (percent < 1.0) {
+                progressColor = Colors.orange;
+              } else {
+                progressColor = Colors.red;
+              }
+              return Container(
+                margin: EdgeInsets.only(bottom: 16),
+                padding: EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: progressColor.withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: progressColor.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.key,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Đã chi: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(sotienhientai)}',
+                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                        ),
+                        Text(
+                          'Hạn mức: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(toida)}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: percent,
+                        minHeight: 10,
+                        backgroundColor: Colors.grey[200],
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          progressColor,
                         ),
                       ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Hạn mức (tối đa): ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(toida)}',
+                    ),
+                    SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        "${(percent * 100).toStringAsFixed(0)}%",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: progressColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      Text(
-                        'Đã chi: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(sotienhientai ?? 0)}',
+                    ),
+                    if (percent >= 1.0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Text(
+                          "Đã vượt hạn mức!",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
-                    ],
-                  ),
-                );
-              } else {
-                return SizedBox.shrink();
-              }
+                  ],
+                ),
+              );
             }).toList(),
         ],
       ),

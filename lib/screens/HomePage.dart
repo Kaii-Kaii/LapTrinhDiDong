@@ -5,6 +5,8 @@ import 'package:qltncn/screens/s_Khac/KhacMain.dart';
 import 'package:qltncn/screens/s_TaiKhoan/TaiKhoanMain.dart';
 //import 'package:qltncn/screens/LichScreen.dart';
 import 'package:qltncn/screens/s_TongQuan/TongQuan.dart';
+import 'package:qltncn/screens/s_BaoCao/BaoCao.dart';
+// import 'package:qltncn/screens/s_TaiKhoan/TaiKhoanMain.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -30,7 +32,7 @@ class _HomePageState extends State<HomePage> {
       ), // Truyền userName và maKH vào đây
       TaikhoanMain(maKH: widget.maKH),
       NhapVaoScreen(maKH: widget.maKH),
-      Main_BaoCao(),
+      BaoCaoThangNam(maKH: widget.maKH),
       KhacMain(maKH: widget.maKH),
       HangMucScreen(maKhachHang: widget.maKH), // <-- Thêm dòng này
     ];
