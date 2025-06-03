@@ -240,56 +240,22 @@ class _ThemTaiKhoanScreenState extends State<ThemTaiKhoanScreen> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                _buildInputCard(
-                  child: ListTile(
-                    leading: Text(
-                      loaiTien.kyHieu,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                    title: Text('${loaiTien.tenLoai} (${loaiTien.menhGia})'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-                    onTap: () async {
-                      final LoaiTien? loaiTienMoi =
-                          await showModalBottomSheet<LoaiTien>(
-                            context: context,
-                            backgroundColor: Colors.white,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.vertical(
-                                top: Radius.circular(18),
-                              ),
-                            ),
-                            builder:
-                                (context) => ListView(
-                                  shrinkWrap: true,
-                                  children:
-                                      danhSachLoaiTien.map((lt) {
-                                        return ListTile(
-                                          leading: Text(
-                                            lt.kyHieu,
-                                            style: const TextStyle(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.green,
-                                            ),
-                                          ),
-                                          title: Text(lt.tenLoai),
-                                          subtitle: Text(lt.menhGia),
-                                          onTap:
-                                              () => Navigator.pop(context, lt),
-                                        );
-                                      }).toList(),
-                                ),
-                          );
-                      if (loaiTienMoi != null) {
-                        setState(() => loaiTien = loaiTienMoi);
-                      }
-                    },
-                  ),
-                ),
+                // ẨN phần chọn loại tiền ở đây
+                // _buildInputCard(
+                //   child: ListTile(
+                //     leading: Text(
+                //       loaiTien.kyHieu,
+                //       style: const TextStyle(
+                //         fontSize: 24,
+                //         fontWeight: FontWeight.bold,
+                //         color: Colors.green,
+                //       ),
+                //     ),
+                //     title: Text('${loaiTien.tenLoai} (${loaiTien.menhGia})'),
+                //     trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+                //     onTap: () async { ... },
+                //   ),
+                // ),
                 const SizedBox(height: 14),
                 _buildInputCard(
                   child: TextField(
@@ -423,10 +389,11 @@ class _ThemTaiKhoanScreenState extends State<ThemTaiKhoanScreen> {
 
     if (confirmed != true) return;
 
+    // Luôn gửi về maLoaiTien = 1 (hoặc giá trị bạn muốn)
     final viMoi = ViNguoiDung(
       maNguoiDung: widget.maKH,
       tenTaiKhoan: tenTaiKhoan,
-      maLoaiTien: int.tryParse(loaiTien.maLoai.toString()) ?? 0,
+      maLoaiTien: 1, // Gán cứng giá trị này
       dienGiai: dienGiai,
       soDu: soDu,
       maVi: maViChon,

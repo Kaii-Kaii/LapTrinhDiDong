@@ -245,22 +245,22 @@ class _BaoCaoThangNamState extends State<BaoCaoThangNam> {
                   color: Colors.green,
                   width: 8,
                   borderRadius: BorderRadius.circular(4),
-                  backDrawRodData: BackgroundBarChartRodData(
-                    show: true,
-                    toY: maxY,
-                    color: Colors.green.withOpacity(0.1),
-                  ),
+                  // backDrawRodData: BackgroundBarChartRodData(
+                  //   show: true,
+                  //   toY: maxY,
+                  //   color: Colors.green.withOpacity(0.1),
+                  // ),
                 ),
                 BarChartRodData(
                   toY: tongChiTheoNgay[day] ?? 0,
                   color: Colors.red,
                   width: 8,
                   borderRadius: BorderRadius.circular(4),
-                  backDrawRodData: BackgroundBarChartRodData(
-                    show: true,
-                    toY: maxY,
-                    color: Colors.red.withOpacity(0.1),
-                  ),
+                  // backDrawRodData: BackgroundBarChartRodData(
+                  //   show: true,
+                  //   toY: maxY,
+                  //   color: Colors.red.withOpacity(0.1),
+                  // ),
                 ),
               ],
             );
