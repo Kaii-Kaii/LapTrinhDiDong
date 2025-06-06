@@ -3,13 +3,7 @@ import 'package:qltncn/screens/s_BaoCao/BaoCao.dart';
 import 'package:qltncn/screens/s_GiaoDich/NhapVaoScreen.dart';
 import 'package:qltncn/screens/s_Khac/KhacMain.dart';
 import 'package:qltncn/screens/s_TaiKhoan/TaiKhoanMain.dart';
-//import 'package:qltncn/screens/LichScreen.dart';
 import 'package:qltncn/screens/s_TongQuan/TongQuan.dart';
-import 'package:qltncn/screens/s_BaoCao/BaoCao.dart';
-// import 'package:qltncn/screens/s_TaiKhoan/TaiKhoanMain.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-
 class HomePage extends StatefulWidget {
   final String userName;
   final String maKH;

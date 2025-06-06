@@ -1,0 +1,108 @@
+*   [33mdb9574d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdeo1[m[33m, [m[1;31morigin/deo1[m[33m)[m Merge remote-tracking branch 'origin/main' into deo1
+[31m|[m[32m\[m  
+[31m|[m * [33mc6d1f41[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m final
+* [32m|[m [33mbfe094e[m Lưu thay đổi trước khi merge main
+[32m|[m[32m/[m  
+* [33me7cd4f5[m[33m ([m[1;32mmain[m[33m)[m fixxx
+* [33m6b69e63[m fixxxxx
+* [33mbca1a8e[m fix fix
+*   [33mbea0c5d[m Merge pull request #12 from Kaii-Kaii/new
+[33m|[m[34m\[m  
+[33m|[m * [33m76d9dce[m[33m ([m[1;31morigin/new[m[33m)[m fi
+* [34m|[m [33m906454e[m fix
+* [34m|[m   [33mb235b3d[m Merge pull request #11 from Kaii-Kaii/deo
+[34m|[m[36m\[m [34m\[m  
+[34m|[m [36m|[m[34m/[m  
+[34m|[m[34m/[m[36m|[m   
+[34m|[m *   [33m5d414b4[m Merge branch 'main' into deo
+[34m|[m [1;31m|[m[34m\[m  
+[34m|[m [1;31m|[m[34m/[m  
+[34m|[m[34m/[m[1;31m|[m   
+* [1;31m|[m [33m88ea711[m fixxxxxx
+* [1;31m|[m   [33m906725d[m Merge branch 'main' of https://github.com/Kaii-Kaii/LapTrinhDiDong
+[1;33m|[m[1;34m\[m [1;31m\[m  
+* [1;34m|[m [1;31m|[m [33m008a61b[m fix
+[1;34m|[m [1;34m|[m [1;31m|[m * [33mfbb3a9c[m[33m ([m[1;31morigin/deo[m[33m)[m fix ví
+[1;34m|[m [1;34m|[m [1;31m|[m[1;31m/[m  
+[1;34m|[m [1;34m|[m * [33m67f69e1[m t muốn ngủ
+[1;34m|[m [1;34m|[m[1;34m/[m  
+[1;34m|[m * [33mb41fdd5[m Merge pull request #10 from Kaii-Kaii/KaiKai
+[1;34m|[m[1;34m/[m[31m|[m 
+[1;34m|[m * [33mf33b026[m fix
+[1;34m|[m[1;34m/[m  
+*   [33m17aa538[m Merge pull request #9 from Kaii-Kaii/deo
+[32m|[m[33m\[m  
+[32m|[m * [33md3c33a4[m qwe123
+[32m|[m[32m/[m  
+* [33mb10e3ce[m update
+*   [33mffa436f[m Merge pull request #8 from Kaii-Kaii/deo2
+[34m|[m[35m\[m  
+[34m|[m *   [33m8db918b[m[33m ([m[1;31morigin/deo2[m[33m)[m Merge branch 'main' into deo2
+[34m|[m [36m|[m[34m\[m  
+[34m|[m [36m|[m[34m/[m  
+[34m|[m[34m/[m[36m|[m   
+* [36m|[m   [33m1d445b8[m Merge pull request #7 from Kaii-Kaii/KhangTuong
+[1;32m|[m[1;33m\[m [36m\[m  
+[1;32m|[m * [36m|[m [33m119e768[m[33m ([m[1;31morigin/KhangTuong[m[33m)[m Dang Ky, hang muc
+* [1;33m|[m [36m|[m [33mee90ab1[m ?????
+* [1;33m|[m [36m|[m [33m1e1bc96[m fixx
+* [1;33m|[m [36m|[m [33m321866f[m fix thue
+[1;33m|[m[1;33m/[m [36m/[m  
+* [36m|[m [33m827185e[m chia tien
+[1;33m|[m * [33m0d0ddd5[m Commit code lên nhánh deo2
+[1;33m|[m * [33m094ff4f[m 11h2905
+[1;33m|[m[1;33m/[m  
+*   [33m5be80f9[m Merge pull request #6 from Kaii-Kaii/deo2
+[1;34m|[m[1;35m\[m  
+[1;34m|[m * [33m1d74e56[m 3h28.05
+* [1;35m|[m [33m258b509[m update new
+* [1;35m|[m [33mbcaf92c[m new new new new new
+[1;35m|[m[1;35m/[m  
+* [33mfe0d3bc[m whyyyyyyyyy
+* [33me70d0e0[m upda
+* [33md158fc7[m update name
+* [33m926242a[m update
+* [33m0470a7c[m upda
+* [33mb07627b[m meow
+* [33m67464a9[m update
+* [33m760adf1[m update ty gia
+*   [33m1d0cdbe[m Merge pull request #5 from Kaii-Kaii/deo2
+[1;36m|[m[31m\[m  
+[1;36m|[m * [33md746d65[m sang26/05
+[1;36m|[m * [33m271bee4[m lan6
+[1;36m|[m * [33m7ecce63[m lan5
+[1;36m|[m * [33mb822d4b[m lan4
+* [31m|[m [33mb576601[m Merge pull request #4 from Kaii-Kaii/deo2
+[32m|[m[31m\[m[31m|[m 
+[32m|[m * [33mb111053[m test1
+* [33m|[m [33m30f6429[m Merge pull request #3 from Kaii-Kaii/deo
+[34m|[m[33m\[m[33m|[m 
+[34m|[m *   [33m0b0d6b6[m aass
+[34m|[m [36m|[m[1;31m\[m  
+[34m|[m [36m|[m *   [33m39914bf[m Merge branch 'deo' of https://github.com/Kaii-Kaii/LapTrinhDiDong into deo
+[34m|[m [36m|[m [1;32m|[m[1;33m\[m  
+[34m|[m [36m|[m * [1;33m\[m   [33mcf772d3[m Merge branch 'main' of https://github.com/Kaii-Kaii/LapTrinhDiDong into deo
+[34m|[m [36m|[m [1;34m|[m[34m\[m [1;33m\[m  
+[34m|[m [36m|[m[34m_[m[1;34m|[m[34m/[m [1;33m/[m  
+[34m|[m[34m/[m[36m|[m [1;34m|[m [1;33m|[m   
+* [36m|[m [1;34m|[m [1;33m|[m [33mbdbcc65[m delete
+[1;35m|[m * [1;34m|[m [1;33m|[m [33me5611d3[m aacc
+[1;35m|[m [1;33m|[m [1;34m|[m[1;33m/[m  
+[1;35m|[m [1;33m|[m[1;33m/[m[1;34m|[m   
+[1;35m|[m * [1;34m|[m [33mb764cff[m ccc
+[1;35m|[m [1;34m|[m[1;34m/[m  
+[1;35m|[m * [33m3eb47aa[m hi
+[1;35m|[m[1;35m/[m  
+*   [33m8601b83[m Merge pull request #2 from Kaii-Kaii/update
+[1;36m|[m[31m\[m  
+[1;36m|[m * [33m4d962b9[m new update
+[1;36m|[m[1;36m/[m  
+* [33m65dca46[m update main
+* [33mf157cc0[m update login
+*   [33mfe5ca67[m Merge pull request #1 from Kaii-Kaii/ddd
+[32m|[m[33m\[m  
+[32m|[m * [33m6a4d13d[m aaaa
+[32m|[m[32m/[m  
+* [33m845784b[m update
+* [33m68b7b8b[m new update
+* [33m45d6311[m helo

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qltncn/screens/s_TaiKhoan/thems/ThemSoTietKiemScreen.dart';
 import 'package:qltncn/screens/s_TaiKhoan/thems/ThemTaiKhoanScreen.dart';
-import 'package:qltncn/screens/s_TaiKhoan/thems/ThemTichLuyScreen.dart';
 import 'tabs/TabTaiKhoan.dart';
 
 class TaikhoanMain extends StatefulWidget {

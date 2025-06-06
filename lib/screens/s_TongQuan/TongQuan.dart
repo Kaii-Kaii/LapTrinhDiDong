@@ -8,8 +8,6 @@ import 'ThemChuyenDi.dart';
 import 'TraCuuTyGia.dart';
 import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung.dart';
 import 'package:qltncn/model/Vi/ViNguoiDung/ViNguoiDung_service.dart';
-import 'package:qltncn/widget/vi_utils.dart';
-import 'package:qltncn/model/Vi/Vi/Vi.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -123,11 +121,18 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     'Hạn mức chi': true,
     'Tiện ích khác': true,
     'Phân tích chi tiêu': true,
-    'Sổ tiết kiệm': true,
     'Theo dõi vay nợ': true,
     'Du lịch': true,
     'Tra cứu tỷ giá': true,
   };
+  String getShortName(String fullName) {
+  List<String> parts = fullName.trim().split(RegExp(r'\s+'));
+  if (parts.length >= 2) {
+    return '${parts[parts.length - 2]} ${parts[parts.length - 1]}';
+  } else {
+    return fullName; // fallback nếu chỉ có 1 từ
+  }
+}
 
   Map<String, bool> tempCardVisibility = {};
 
@@ -477,14 +482,13 @@ class _TongQuanScreenState extends State<TongQuanScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "Chào ${hoTenKhachHang ?? userName}!",
+                          "Chào ${hoTenKhachHang != null ? getShortName(hoTenKhachHang!) : userName}!",
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
-
                         Row(
                           children: [
                             IconButton(
@@ -503,40 +507,6 @@ class _TongQuanScreenState extends State<TongQuanScreen>
                               },
                             ),
                           ],
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        DropdownButton<String>(
-                          value: selectedFilter,
-                          items:
-                              ["Ngày", "Tháng", "Năm"]
-                                  .map(
-                                    (e) => DropdownMenuItem(
-                                      value: e,
-                                      child: Text(e),
-                                    ),
-                                  )
-                                  .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedFilter = value!;
-                            });
-                          },
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          onPressed: () => _selectDate(context),
-                          child: Text("Chọn ${selectedFilter.toLowerCase()}"),
                         ),
                       ],
                     ),
@@ -637,14 +607,6 @@ class _TongQuanScreenState extends State<TongQuanScreen>
                     ],
                     if (cardVisibility['Phân tích chi tiêu']!) ...[
                       _buildExpenseAnalysisCard(),
-                      SizedBox(height: 16),
-                    ],
-                    if (cardVisibility['Sổ tiết kiệm']!) ...[
-                      _buildSavingsCard(),
-                      SizedBox(height: 16),
-                    ],
-                    if (cardVisibility['Theo dõi vay nợ']!) ...[
-                      _buildLoanTrackingCard(),
                       SizedBox(height: 16),
                     ],
                   ],
@@ -1395,87 +1357,6 @@ class _TongQuanScreenState extends State<TongQuanScreen>
       ),
     );
   }
-
-  Widget _buildSavingsCard() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Sổ tiết kiệm",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 16),
-          Container(
-            height: 200,
-            alignment: Alignment.center,
-            child: Text(
-              "Hiện tại, bạn chưa có sổ tiết kiệm nào",
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoanTrackingCard() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Theo dõi vay nợ",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 16),
-          Container(
-            height: 200,
-            alignment: Alignment.center,
-            child: Text(
-              "Hiện tại bạn không có khoản cho vay và còn nợ nào",
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSummaryCard({
     required String title,
     required double amount,
