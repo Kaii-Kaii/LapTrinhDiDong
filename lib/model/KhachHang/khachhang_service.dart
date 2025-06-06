@@ -6,7 +6,9 @@ class KhachHangService {
   static Future<KhachHang?> fetchKhachHangByMaKH(String maKH) async {
     try {
       final response = await http.get(
-        Uri.parse('http://10.0.2.2:5203/api/KhachHang'), // Lấy danh sách tất cả khách hàng
+        Uri.parse(
+          'http://10.0.2.2:5203/api/KhachHang',
+        ), // Lấy danh sách tất cả khách hàng
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -17,7 +19,12 @@ class KhachHangService {
             .map((item) => KhachHang.fromJson(item))
             .firstWhere(
               (khachHang) => khachHang.maKH == maKH,
-              orElse: () => KhachHang(maKH: '', maTaiKhoan: '', xu: 0), // Trả về đối tượng trống nếu không tìm thấy
+              orElse:
+                  () => KhachHang(
+                    maKH: '',
+                    maTaiKhoan: '',
+                    xu: 0,
+                  ), // Trả về đối tượng trống nếu không tìm thấy
             );
         return customer;
       } else {
@@ -28,6 +35,7 @@ class KhachHangService {
       return null;
     }
   }
+
   static Future<String?> fetchMaKHByMaTaiKhoan(String maTaiKhoan) async {
     try {
       final response = await http.get(
@@ -77,4 +85,38 @@ class KhachHangService {
     return null;
   }
 
+  static Future<bool> updateThongTinKhachHang({
+    required String maKH,
+    required String hoTen,
+    required String soDT,
+    required DateTime? ngaySinh,
+  }) async {
+    try {
+      final url = Uri.parse(
+        'https://10.0.2.2:7283/api/KhachHang/UpdateThongTin/$maKH',
+      );
+      final bodyData = {
+        'hoten': hoTen,
+        'sodt': soDT,
+        'ngaysinh': ngaySinh?.toIso8601String(),
+      };
+
+      print('🛰️ Gửi PUT tới: $url');
+      print('📦 Dữ liệu gửi lên: ${jsonEncode(bodyData)}');
+
+      final response = await http.put(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(bodyData),
+      );
+
+      print(' Trạng thái phản hồi: ${response.statusCode}');
+      print(' Nội dung phản hồi: ${response.body}');
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print(' Lỗi updateThongTinKhachHang: $e');
+      return false;
+    }
+  }
 }

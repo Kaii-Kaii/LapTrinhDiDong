@@ -4,6 +4,7 @@ import 'package:qltncn/model/KhachHang/Khach_Hang.dart';
 import 'package:qltncn/model/TaiKhoan/TaiKhoan.dart';
 import 'package:qltncn/model/TaiKhoan/TaiKhoan_service.dart';
 import 'package:qltncn/model/KhachHang/khachhang_service.dart';
+import 'package:qltncn/screens/s_Khac/TienIch/HoSoCaNhanScreen.dart';
 import 'package:qltncn/screens/s_Khac/TienIch/TyGiaScreen.dart';
 import 'package:qltncn/screens/s_Khac/TienIch/TinhThueThuNhapCaNhanScreen.dart';
 import 'package:qltncn/screens/s_Khac/TienIch/TinhLaiVayScreen.dart';
@@ -100,19 +101,35 @@ class _KhacMainState extends State<KhacMain> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryColor.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              shadowColor: primaryColor.withOpacity(0.2),
+              elevation: 5,
             ),
+            onPressed: () async {
+              final maKH = widget.maKH;
+
+              final maTK1 = await KhachHangService.fetchMaTaiKhoanByMaKH(maKH);
+
+              if (maTK1 != null) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => HoSoCaNhanScreen(maKH: maKH, maTaiKhoan: maTK1),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Không tìm thấy tài khoản tương ứng')),
+                );
+              }
+            },
             child: Text(
               'Hồ Sơ Cá Nhân',
               style: TextStyle(

@@ -153,74 +153,51 @@ class _BaoCaoThangNamState extends State<BaoCaoThangNam> {
           10000;
       return BarChart(
         BarChartData(
-          alignment: BarChartAlignment.spaceAround,
+          alignment: BarChartAlignment.spaceEvenly, // Đổi thành spaceEvenly
           maxY: maxY,
           barGroups: List.generate(12, (i) {
             final thang = i + 1;
             return BarChartGroupData(
               x: thang,
+              barsSpace: 4, // Khoảng cách giữa các thanh trong nhóm
               barRods: [
                 BarChartRodData(
                   toY: tongThuTheoThang[thang] ?? 0,
                   color: Colors.green,
                   width: 12,
                   borderRadius: BorderRadius.circular(4),
-                  // Xoá hoặc comment dòng này để bỏ nền phía sau
-                  // backDrawRodData: BackgroundBarChartRodData(
-                  //   show: true,
-                  //   toY: maxY,
-                  //   color: Colors.green.withOpacity(0.1),
-                  // ),
                 ),
                 BarChartRodData(
                   toY: tongChiTheoThang[thang] ?? 0,
                   color: Colors.red,
                   width: 12,
                   borderRadius: BorderRadius.circular(4),
-                  // backDrawRodData: BackgroundBarChartRodData(
-                  //   show: true,
-                  //   toY: maxY,
-                  //   color: Colors.red.withOpacity(0.1),
-                  // ),
                 ),
               ],
             );
           }),
           titlesData: FlTitlesData(
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: true, reservedSize: 60),
+            ),
+            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 28,
                 getTitlesWidget: (value, meta) {
-                  // Chỉ hiển thị nhãn cho ngày 1, 5, 10, 15, 20, 25, 30
-                  if (viewMode == ViewMode.month) {
-                    if (value % 5 == 0 || value == 1) {
-                      return Transform.rotate(
-                        angle: -0.5,
-                        child: Text(
-                          '${value.toInt()}',
-                          style: TextStyle(fontSize: 10),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  } else {
-                    // Chỉ hiển thị nhãn cho các tháng chẵn
-                    if (value % 2 == 0) {
-                      return Text(
-                        'T${value.toInt()}',
-                        style: TextStyle(fontSize: 12),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  }
+                  return Text(
+                    'T${value.toInt()}',
+                    style: TextStyle(fontSize: 12),
+                  );
                 },
               ),
             ),
           ),
           barTouchData: BarTouchData(enabled: true),
           gridData: FlGridData(show: true),
+          borderData: FlBorderData(show: false), // Ẩn viền để tránh lệch
         ),
       );
     } else {
@@ -233,73 +210,58 @@ class _BaoCaoThangNamState extends State<BaoCaoThangNam> {
           10000;
       return BarChart(
         BarChartData(
-          alignment: BarChartAlignment.spaceAround,
+          alignment: BarChartAlignment.spaceEvenly, // Đổi thành spaceEvenly
           maxY: maxY,
           barGroups: List.generate(daysInMonth, (i) {
             final day = i + 1;
             return BarChartGroupData(
               x: day,
+              barsSpace: 2, // Khoảng cách giữa các thanh trong nhóm
               barRods: [
                 BarChartRodData(
                   toY: tongThuTheoNgay[day] ?? 0,
                   color: Colors.green,
-                  width: 8,
+                  width: 6, // Giảm width cho view theo ngày
                   borderRadius: BorderRadius.circular(4),
-                  // backDrawRodData: BackgroundBarChartRodData(
-                  //   show: true,
-                  //   toY: maxY,
-                  //   color: Colors.green.withOpacity(0.1),
-                  // ),
                 ),
                 BarChartRodData(
                   toY: tongChiTheoNgay[day] ?? 0,
                   color: Colors.red,
-                  width: 8,
+                  width: 6, // Giảm width cho view theo ngày
                   borderRadius: BorderRadius.circular(4),
-                  // backDrawRodData: BackgroundBarChartRodData(
-                  //   show: true,
-                  //   toY: maxY,
-                  //   color: Colors.red.withOpacity(0.1),
-                  // ),
                 ),
               ],
             );
           }),
           titlesData: FlTitlesData(
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(showTitles: true, reservedSize: 60),
+            ),
+            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 28,
                 getTitlesWidget: (value, meta) {
                   // Chỉ hiển thị nhãn cho ngày 1, 5, 10, 15, 20, 25, 30
-                  if (viewMode == ViewMode.month) {
-                    if (value % 5 == 0 || value == 1) {
-                      return Transform.rotate(
-                        angle: -0.5,
-                        child: Text(
-                          '${value.toInt()}',
-                          style: TextStyle(fontSize: 10),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  } else {
-                    // Chỉ hiển thị nhãn cho các tháng chẵn
-                    if (value % 2 == 0) {
-                      return Text(
-                        'T${value.toInt()}',
-                        style: TextStyle(fontSize: 12),
-                      );
-                    }
-                    return const SizedBox.shrink();
+                  if (value % 5 == 0 || value == 1) {
+                    return Transform.rotate(
+                      angle: -0.5,
+                      child: Text(
+                        '${value.toInt()}',
+                        style: TextStyle(fontSize: 10),
+                      ),
+                    );
                   }
+                  return const SizedBox.shrink();
                 },
               ),
             ),
           ),
           barTouchData: BarTouchData(enabled: true),
           gridData: FlGridData(show: true),
+          borderData: FlBorderData(show: false), // Ẩn viền để tránh lệch
         ),
       );
     }

@@ -850,219 +850,571 @@ class _LichSuGhiChepState extends State<LichSuGhiChep> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FFFE),
       appBar: AppBar(
-        title: const Text('Lịch sử ghi chép'),
-        backgroundColor: Colors.blue[700],
+        title: const Text(
+          'Lịch sử ghi chép',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+        ),
+        backgroundColor: const Color(0xFF03A9F4),
         foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
-          IconButton(
-            icon: Icon(showBalance ? Icons.visibility : Icons.visibility_off),
-            onPressed: () {
-              setState(() {
-                showBalance = !showBalance;
-              });
-            },
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: Icon(showBalance ? Icons.visibility : Icons.visibility_off),
+              onPressed: () {
+                setState(() {
+                  showBalance = !showBalance;
+                });
+              },
+            ),
           ),
-          IconButton(
-            icon: Icon(showAllTransactions ? Icons.calendar_today : Icons.list),
-            onPressed: () {
-              setState(() {
-                showAllTransactions = !showAllTransactions;
-                _filterTransactionsByDate();
-              });
-            },
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: Icon(
+                showAllTransactions ? Icons.calendar_today : Icons.list,
+              ),
+              onPressed: () {
+                setState(() {
+                  showAllTransactions = !showAllTransactions;
+                  _filterTransactionsByDate();
+                });
+              },
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () => _selectDate(context),
+          Container(
+            margin: const EdgeInsets.only(right: 8, left: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.date_range),
+              onPressed: () => _selectDate(context),
+            ),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  showAllTransactions
-                      ? 'Tất cả giao dịch'
-                      : 'Ngày: ${DateFormat('dd/MM/yyyy').format(selectedDate)}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (!showAllTransactions)
-                  TextButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        showAllTransactions = true;
-                        _filterTransactionsByDate();
-                      });
-                    },
-                    icon: Icon(Icons.list),
-                    label: Text('Xem tất cả'),
-                  ),
-              ],
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF03A9F4), Color(0xFFF8FFFE)],
+            stops: [0.0, 0.3],
           ),
-          Expanded(
-            child:
-                isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : error != null
-                    ? Center(
-                      child: Text(
-                        error!,
-                        style: const TextStyle(color: Colors.red),
+        ),
+        child: Column(
+          children: [
+            // Header Section
+            Container(
+              margin: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(20.0),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.9),
+                    Colors.white.withOpacity(0.7),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF03A9F4).withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          showAllTransactions
+                              ? 'Tất cả giao dịch'
+                              : 'Giao dịch theo ngày',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF03A9F4),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        if (!showAllTransactions)
+                          Text(
+                            DateFormat('dd/MM/yyyy').format(selectedDate),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (!showAllTransactions)
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF03A9F4), Color(0xFF0288D1)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF03A9F4).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                    )
-                    : filteredTransactions.isEmpty
-                    ? const Center(child: Text('Không có giao dịch nào'))
-                    : ListView.builder(
-                      itemCount: filteredTransactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = filteredTransactions[index];
-                        return Card(
-                          elevation: 2,
-                          margin: const EdgeInsets.symmetric(
+                      child: TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            showAllTransactions = true;
+                            _filterTransactionsByDate();
+                          });
+                        },
+                        icon: const Icon(
+                          Icons.list,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Xem tất cả',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 8,
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListTile(
-                            onTap: () => _showEditDialog(transaction),
-                            leading: Icon(
-                              transaction.loaiGiaoDich == "Thu"
-                                  ? Icons.arrow_downward
-                                  : Icons.arrow_upward,
-                              color:
-                                  transaction.loaiGiaoDich == "Thu"
-                                      ? Colors.green
-                                      : Colors.red,
-                            ),
-                            title: Text(
-                              '${transaction.tenDanhMucNguoiDung ?? danhMucNames[transaction.maHangMuc] ?? 'Không có danh mục'}'
-                              '${transaction.ghiChu.isNotEmpty ? ' - ${transaction.ghiChu}' : ''}',
-                            ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Ví: ${viNames[transaction.maVi] ?? 'Đang tải...'} - Danh mục: ${danhMucNames[transaction.maHangMuc] ?? 'Đang tải...'}',
-                                ),
-                                Text(
-                                  'Thời gian: ${DateFormat('dd/MM/yyyy HH:mm').format(transaction.thoiGian)}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                                if (transaction.soTienCu != null && showBalance)
-                                  Text(
-                                    'Số dư cũ: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(transaction.soTienCu)}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                if (showBalance)
-                                  Text(
-                                    'Số dư mới: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(transaction.soTienMoi)}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    if (transaction.soTienGiaoDich != null)
-                                      Text(
-                                        '${transaction.loaiGiaoDich == "Thu" ? "+" : "-"}${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(transaction.soTienGiaoDich)}',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          color:
-                                              transaction.loaiGiaoDich == "Thu"
-                                                  ? Colors.green
-                                                  : Colors.red,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    Text(
-                                      transaction.hanhDong,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                PopupMenuButton<String>(
-                                  icon: const Icon(Icons.more_vert),
-                                  onSelected: (value) {
-                                    switch (value) {
-                                      case 'edit':
-                                        _showEditDialog(transaction);
-                                        break;
-                                      case 'view_image':
-                                        _viewTransactionImage(
-                                          transaction.maGiaoDich,
-                                        );
-                                        break;
-                                      case 'reupload_image':
-                                        _reuploadTransactionImage(transaction);
-                                        break;
-                                    }
-                                  },
-                                  itemBuilder:
-                                      (context) => [
-                                        const PopupMenuItem(
-                                          value: 'edit',
-                                          child: ListTile(
-                                            leading: Icon(Icons.edit),
-                                            title: Text('Sửa số tiền'),
-                                          ),
-                                        ),
-                                        const PopupMenuItem(
-                                          value: 'view_image',
-                                          child: ListTile(
-                                            leading: Icon(Icons.image),
-                                            title: Text('Xem ảnh giao dịch'),
-                                          ),
-                                        ),
-                                        const PopupMenuItem(
-                                          value: 'reupload_image',
-                                          child: ListTile(
-                                            leading: Icon(Icons.upload),
-                                            title: Text('Tải lại ảnh'),
-                                          ),
-                                        ),
-                                      ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                        ),
+                      ),
                     ),
+                ],
+              ),
+            ),
+
+            // Transaction List
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child:
+                    isLoading
+                        ? _buildLoadingWidget()
+                        : error != null
+                        ? _buildErrorWidget()
+                        : filteredTransactions.isEmpty
+                        ? _buildEmptyWidget()
+                        : _buildTransactionList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF03A9F4).withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: const CircularProgressIndicator(
+              color: Color(0xFF03A9F4),
+              strokeWidth: 3,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Đang tải dữ liệu...',
+            style: TextStyle(
+              color: Color(0xFF03A9F4),
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              error!,
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyWidget() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(30),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF03A9F4).withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.receipt_long_outlined,
+              color: Colors.grey[400],
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Không có giao dịch nào',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionList() {
+    return ListView.builder(
+      itemCount: filteredTransactions.length,
+      padding: const EdgeInsets.only(bottom: 20),
+      itemBuilder: (context, index) {
+        final transaction = filteredTransactions[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF03A9F4).withOpacity(0.08),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ListTile(
+            onTap: () => _showEditDialog(transaction),
+            contentPadding: const EdgeInsets.all(16),
+            leading: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors:
+                      transaction.loaiGiaoDich == "Thu"
+                          ? [Colors.green.shade400, Colors.green.shade600]
+                          : [Colors.red.shade400, Colors.red.shade600],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: (transaction.loaiGiaoDich == "Thu"
+                            ? Colors.green
+                            : Colors.red)
+                        .withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                transaction.loaiGiaoDich == "Thu"
+                    ? Icons.trending_up
+                    : Icons.trending_down,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            title: Text(
+              '${transaction.tenDanhMucNguoiDung ?? danhMucNames[transaction.maHangMuc] ?? 'Không có danh mục'}'
+              '${transaction.ghiChu.isNotEmpty ? ' - ${transaction.ghiChu}' : ''}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF03A9F4).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Ví: ${viNames[transaction.maVi] ?? 'Đang tải...'}',
+                    style: const TextStyle(
+                      color: Color(0xFF03A9F4),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      DateFormat(
+                        'dd/MM/yyyy HH:mm',
+                      ).format(transaction.thoiGian),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+                if (transaction.soTienCu != null && showBalance) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Số dư cũ: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(transaction.soTienCu)}',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                  ),
+                ],
+                if (showBalance) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Số dư mới: ${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(transaction.soTienMoi)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF03A9F4),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            trailing: SizedBox(
+              width: 90, // Giảm width từ 120 xuống 90
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (transaction.soTienGiaoDich != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4, // Giảm padding
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (transaction.loaiGiaoDich == "Thu"
+                                ? Colors.green
+                                : Colors.red)
+                            .withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${transaction.loaiGiaoDich == "Thu" ? "+" : "-"}${_formatCurrency(transaction.soTienGiaoDich!)}',
+                        style: TextStyle(
+                          fontSize: 10, // Giảm từ 11 xuống 10
+                          color:
+                              transaction.loaiGiaoDich == "Thu"
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 3, // Giảm padding
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF03A9F4).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text(
+                          transaction.hanhDong,
+                          style: const TextStyle(
+                            fontSize: 8, // Giảm từ 9 xuống 8
+                            color: Color(0xFF03A9F4),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        width: 28, // Giảm từ 32 xuống 28
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF03A9F4).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(
+                            Icons.more_vert,
+                            color: Color(0xFF03A9F4),
+                            size: 16, // Giảm từ 18 xuống 16
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 8,
+                          onSelected: (value) {
+                            switch (value) {
+                              case 'edit':
+                                _showEditDialog(transaction);
+                                break;
+                              case 'view_image':
+                                _viewTransactionImage(transaction.maGiaoDich);
+                                break;
+                              case 'reupload_image':
+                                _reuploadTransactionImage(transaction);
+                                break;
+                            }
+                          },
+                          itemBuilder:
+                              (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: ListTile(
+                                    leading: Icon(
+                                      Icons.edit,
+                                      color: Color(0xFF03A9F4),
+                                    ),
+                                    title: Text('Sửa số tiền'),
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'view_image',
+                                  child: ListTile(
+                                    leading: Icon(
+                                      Icons.image,
+                                      color: Color(0xFF03A9F4),
+                                    ),
+                                    title: Text('Xem ảnh giao dịch'),
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'reupload_image',
+                                  child: ListTile(
+                                    leading: Icon(
+                                      Icons.upload,
+                                      color: Color(0xFF03A9F4),
+                                    ),
+                                    title: Text('Tải lại ảnh'),
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Thêm hàm format currency ngắn gọn hơn
+  String _formatCurrency(double amount) {
+    if (amount >= 1000000000) {
+      return '${(amount / 1000000000).toStringAsFixed(1)}B₫';
+    } else if (amount >= 1000000) {
+      return '${(amount / 1000000).toStringAsFixed(1)}M₫';
+    } else if (amount >= 1000) {
+      return '${(amount / 1000).toStringAsFixed(0)}K₫';
+    } else {
+      return '${amount.toStringAsFixed(0)}₫';
+    }
   }
 
   @override

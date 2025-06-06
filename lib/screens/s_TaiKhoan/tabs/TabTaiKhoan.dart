@@ -486,12 +486,6 @@ class TabTaiKhoanState extends State<TabTaiKhoan>
                                 'Điều chỉnh số dư',
                               ),
                               _buildPopupMenuItem('sua', Icons.edit, 'Sửa'),
-                              _buildPopupMenuItem(
-                                'xoa',
-                                Icons.delete,
-                                'Xóa',
-                                isDestructive: true,
-                              ),
                             ],
                       ),
                     ),
