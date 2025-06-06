@@ -53,7 +53,41 @@ class TabTaiKhoanState extends State<TabTaiKhoan> {
         break;
     }
   }
+  // Ví dụ dữ liệu mô phỏng để thay thế tinhNangList
+  final List<Vi> danhSachViMau = [
+    Vi(maVi: 1, tenVi: 'Tiền mặt', loaiVi: 'cash', iconVi: 'wallet'),
+    Vi(maVi: 2, tenVi: 'Ngân hàng', loaiVi: 'bank', iconVi: 'bank'),
+    Vi(maVi: 3, tenVi: 'Thẻ tín dụng', loaiVi: 'credit', iconVi: 'credit_card'),
+  ];
 
+  // Hàm trả về icon theo chuỗi iconVi
+  Icon getCustomIcon(String iconVi) {
+    switch (iconVi) {
+      case 'wallet':
+        return const Icon(Icons.account_balance_wallet, color: Color(0xFF1565C0));
+      case 'bank':
+        return const Icon(Icons.account_balance, color: Color(0xFF1565C0));
+      case 'credit_card':
+        return const Icon(Icons.credit_card, color: Color(0xFF1565C0));
+      default:
+        return const Icon(Icons.wallet, color: Color(0xFF1565C0));
+    }
+  }
+
+  // Hàm trả về màu theo mã ví (hoặc loại ví)
+  Color getColorByMaVi(int maVi) {
+    switch (maVi) {
+      case 1:
+        return Colors.orange;
+      case 2:
+        return Colors.green;
+      case 3:
+        return Colors.purple;
+      default:
+        return const Color(0xFF1565C0);
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -185,19 +219,19 @@ class TabTaiKhoanState extends State<TabTaiKhoan> {
                       itemCount: danhSachVi.length,
                       itemBuilder: (context, index) {
                         final viNguoiDung = danhSachVi[index];
-                        final viMau = tinhNangList.firstWhere(
+                        final viMau = danhSachViMau.firstWhere(
                           (vi) => vi.maVi == viNguoiDung.maVi,
-                          orElse:
-                              () => Vi(
-                                maVi: 0,
-                                tenVi: '',
-                                loaiVi: '',
-                                iconVi: '',
-                              ),
+                          orElse: () => Vi(
+                            maVi: 0,
+                            tenVi: '',
+                            loaiVi: '',
+                            iconVi: '',
+                          ),
                         );
 
-                        final color = getColorForLoaiVi(viMau.maVi ?? 0);
-                        final iconWidget = getIconWidget(viMau.iconVi ?? '');
+                        final color = getColorByMaVi(viMau.maVi ?? 0);
+                        final iconWidget = getCustomIcon(viMau.iconVi ?? '');
+
 
                         return Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
