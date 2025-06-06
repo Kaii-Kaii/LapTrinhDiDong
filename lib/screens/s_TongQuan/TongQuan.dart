@@ -13,6 +13,11 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
+import 'package:qltncn/screens/s_Khac/TienIch/TyGiaScreen.dart';
+import 'package:qltncn/screens/s_Khac/TienIch/TinhThueThuNhapCaNhanScreen.dart';
+import 'package:qltncn/screens/s_Khac/TienIch/TinhLaiVayScreen.dart';
+import 'package:qltncn/screens/s_Khac/TienIch/TinhLaiTienGui.dart';
+import 'package:qltncn/screens/s_Khac/TienIch/ChiaTien.dart';
 
 // Add a global StreamController to handle transaction updates
 final StreamController<void> transactionUpdateController =
@@ -29,7 +34,10 @@ class TongQuanScreen extends StatefulWidget {
 
 class _TongQuanScreenState extends State<TongQuanScreen>
     with WidgetsBindingObserver {
-  //final DatabaseHelper _dbHelper = DatabaseHelper();
+  // Màu chủ đạo
+  final Color primaryColor = const Color(0xFF03A9F4);
+  final Color backgroundColor = const Color(0xFFF8FAFB);
+
   Map<String, double> incomeData = {};
   Map<String, Map<String, dynamic>> expenseData = {};
   double totalIncome = 0;
@@ -40,7 +48,7 @@ class _TongQuanScreenState extends State<TongQuanScreen>
   String selectedTimePeriod = "Tháng này";
   DateTime selectedDate = DateTime.now();
 
-  late String userName; // Tên người dùng sẽ được gán từ widget
+  late String userName;
   late String maKH;
   String? hoTenKhachHang;
 
@@ -120,19 +128,15 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     'Tình hình thu chi': true,
     'Hạn mức chi': true,
     'Tiện ích khác': true,
-    'Phân tích chi tiêu': true,
-    'Theo dõi vay nợ': true,
-    'Du lịch': true,
-    'Tra cứu tỷ giá': true,
   };
   String getShortName(String fullName) {
-  List<String> parts = fullName.trim().split(RegExp(r'\s+'));
-  if (parts.length >= 2) {
-    return '${parts[parts.length - 2]} ${parts[parts.length - 1]}';
-  } else {
-    return fullName; // fallback nếu chỉ có 1 từ
+    List<String> parts = fullName.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts[parts.length - 2]} ${parts[parts.length - 1]}';
+    } else {
+      return fullName;
+    }
   }
-}
 
   Map<String, bool> tempCardVisibility = {};
 
@@ -142,7 +146,6 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     userName = widget.userName;
     maKH = widget.maKH;
 
-    // Set initial date range to current month
     final now = DateTime.now();
     startDate = DateTime(now.year, now.month, 1);
     endDate = DateTime(now.year, now.month + 1, 0);
@@ -152,10 +155,8 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     _loadBalanceVisibility();
     _loadTransactionData();
 
-    // Add focus listener
     _focusNode.addListener(_onFocusChange);
 
-    // Listen for transaction updates
     _transactionUpdateSubscription = transactionUpdateController.stream.listen((
       _,
     ) {
@@ -166,7 +167,6 @@ class _TongQuanScreenState extends State<TongQuanScreen>
 
   void _onFocusChange() {
     if (_focusNode.hasFocus) {
-      // Refresh data when screen comes into focus
       _loadDanhSachVi();
       _loadKhachHang();
     }
@@ -187,8 +187,6 @@ class _TongQuanScreenState extends State<TongQuanScreen>
 
   Future<void> _loadTransactionData() async {
     try {
-      // Format dates for API with proper padding for month and day
-      // Set end date to end of day (23:59:59)
       String formattedStartDate =
           "${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}T00:00:00";
       String formattedEndDate =
@@ -216,10 +214,8 @@ class _TongQuanScreenState extends State<TongQuanScreen>
         double totalThu = 0;
         double totalChi = 0;
 
-        // Group transactions by maGiaoDich to get latest update for each
         Map<String, dynamic> latestTransactions = {};
 
-        // First pass: collect all transactions
         for (var transaction in data) {
           if (transaction['giaoDich'] != null) {
             final giaoDich = transaction['giaoDich'];
@@ -232,13 +228,10 @@ class _TongQuanScreenState extends State<TongQuanScreen>
             ); // Debug log
 
             if (maGiaoDich != null) {
-              // For new transactions, always keep them
               if (hanhDong == 'TaoMoi') {
                 latestTransactions[maGiaoDich] = transaction;
                 print('Added new transaction: $maGiaoDich'); // Debug log
-              }
-              // For updates, only keep the latest one
-              else if (hanhDong == 'CapNhat') {
+              } else if (hanhDong == 'CapNhat') {
                 final currentDate = DateTime.parse(thoiGian ?? '');
                 final existingDate =
                     latestTransactions[maGiaoDich] != null
@@ -258,11 +251,7 @@ class _TongQuanScreenState extends State<TongQuanScreen>
           }
         }
 
-        print(
-          'Filtered to ${latestTransactions.length} transactions',
-        ); // Debug log
-
-        // Second pass: calculate totals from filtered transactions
+        print('Filtered to ${latestTransactions.length} transactions');
         for (var transaction in latestTransactions.values) {
           if (transaction['giaoDich'] != null) {
             final giaoDich = transaction['giaoDich'];
@@ -299,14 +288,13 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     );
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
-      // Chỉ lấy loại chi và có hạn mức
       final Map<String, Map<String, dynamic>> temp = {};
       for (var hm in data) {
         if (hm['loai'] == 'chi' && hm['toida'] != null) {
           temp[hm['tenhangmuc']] = {
             'toida': hm['toida'],
             'sotienhientai': hm['sotienhientai'] ?? 0,
-            'mahangmuc': hm['mahangmuc'], // Thêm dòng này
+            'mahangmuc': hm['mahangmuc'],
           };
         }
       }
@@ -365,288 +353,244 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     }
   }
 
-  void _showPersonalizationDialog() {
-    // Copy current visibility state to temporary state
-    tempCardVisibility = Map.from(cardVisibility);
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => StatefulBuilder(
-            builder:
-                (context, setDialogState) => AlertDialog(
-                  title: Text('Cá nhân hoá giao diện tổng quan'),
-                  content: SizedBox(
-                    width: double.maxFinite,
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: tempCardVisibility.length,
-                      itemBuilder: (context, index) {
-                        final cardName = tempCardVisibility.keys.elementAt(
-                          index,
-                        );
-                        final isVisible = tempCardVisibility[cardName]!;
-                        return Container(
-                          margin: EdgeInsets.symmetric(vertical: 4),
-                          decoration: BoxDecoration(
-                            color:
-                                isVisible
-                                    ? Colors.blue.withOpacity(0.1)
-                                    : Colors.grey.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: SwitchListTile(
-                            title: Text(
-                              cardName,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color:
-                                    isVisible ? Colors.blue : Colors.grey[600],
-                              ),
-                            ),
-                            value: isVisible,
-                            onChanged: (value) {
-                              setDialogState(() {
-                                tempCardVisibility[cardName] = value;
-                              });
-                            },
-                            activeColor: Colors.blue,
-                            inactiveThumbColor: Colors.grey[400],
-                            inactiveTrackColor: Colors.grey[300],
-                            activeTrackColor: Colors.blue.withOpacity(0.5),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: Text('Huỷ'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          cardVisibility = Map.from(tempCardVisibility);
-                        });
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Đã lưu thay đổi'),
-                            backgroundColor: Colors.green,
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: Text('Lưu thay đổi'),
-                    ),
-                  ],
-                ),
-          ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     double currentBalance = totalIncome - totalExpense;
     return Focus(
       focusNode: _focusNode,
       child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        body: SafeArea(
-          child: Column(
-            children: [
-              // Header Section
-              Container(
-                padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 5,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Chào ${hoTenKhachHang != null ? getShortName(hoTenKhachHang!) : userName}!",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.refresh, color: Colors.blue),
-                              onPressed: () {
-                                // TODO: Implement reload functionality
-                              },
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.notifications,
-                                color: Colors.blue,
-                              ),
-                              onPressed: () {
-                                // TODO: Implement notification functionality
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Balance Card
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Container(
-                  padding: EdgeInsets.all(20),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                primaryColor.withOpacity(0.1),
+                backgroundColor,
+                backgroundColor,
+              ],
+              stops: const [0.0, 0.3, 1.0],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Header Section
+                Container(
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [primaryColor.withOpacity(0.8), primaryColor],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: Offset(0, 2),
+                        color: primaryColor.withOpacity(0.3),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            "Số dư hiện tại" +
-                                (isBalanceVisible ? "" : " (Ẩn)"),
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Xin chào!",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "${hoTenKhachHang != null ? getShortName(hoTenKhachHang!) : userName}",
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            icon: Icon(
-                              isBalanceVisible
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              color: Colors.blue,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                isBalanceVisible = !isBalanceVisible;
-                              });
-                              _saveBalanceVisibility(
-                                isBalanceVisible,
-                              ); // Lưu trạng thái mới
-                            },
+                          Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.refresh,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    _refreshData();
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.notifications,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    // TODO: Implement notification functionality
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        isBalanceVisible
-                            ? "${formattedTongSoDu} đ"
-                            : "****** đ",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color:
-                              currentBalance >= 0 ? Colors.green : Colors.red,
+                      const SizedBox(height: 20),
+                      // Balance Card trong header
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.white,
+                              Colors.white.withOpacity(0.95),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Số dư hiện tại${isBalanceVisible ? "" : " (Ẩn)"}",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: primaryColor.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: IconButton(
+                                    icon: Icon(
+                                      isBalanceVisible
+                                          ? Icons.visibility
+                                          : Icons.visibility_off,
+                                      color: primaryColor,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        isBalanceVisible = !isBalanceVisible;
+                                      });
+                                      _saveBalanceVisibility(isBalanceVisible);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              isBalanceVisible
+                                  ? "${formattedTongSoDu} đ"
+                                  : "****** đ",
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color:
+                                    currentBalance >= 0
+                                        ? Colors.green
+                                        : Colors.red,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
 
-              // Charts Section
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.all(16),
-                  children: [
-                    if (cardVisibility['Tình hình thu chi']!) ...[
+                // Charts Section - Chỉ 3 card cố định
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
                       _buildIncomeChartCard("Tình hình thu chi", incomeData),
-                      SizedBox(height: 16),
-                    ],
-                    if (cardVisibility['Hạn mức chi']!) ...[
+                      const SizedBox(height: 16),
                       _buildExpenseChartCard("Hạn mức chi", expenseData),
-                      SizedBox(height: 16),
-                    ],
-                    if (cardVisibility['Du lịch']!) ...[
-                      _buildTravelCard(),
-                      SizedBox(height: 16),
-                    ],
-                    if (cardVisibility['Tra cứu tỷ giá']!) ...[
-                      _buildExchangeRateCard(),
-                      SizedBox(height: 16),
-                    ],
-                    if (cardVisibility['Tiện ích khác']!) ...[
+                      const SizedBox(height: 16),
                       _buildUtilitiesCard(),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                     ],
-                    if (cardVisibility['Phân tích chi tiêu']!) ...[
-                      _buildExpenseAnalysisCard(),
-                      SizedBox(height: 16),
-                    ],
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: ElevatedButton.icon(
-                  onPressed: _showPersonalizationDialog,
-                  icon: Icon(Icons.settings),
-                  label: Text('Cá nhân hoá giao diện tổng quan'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildIncomeChartCard(String title, Map<String, double> data) {
+  Widget _buildSummaryCard({
+    required String title,
+    required double amount,
+    required IconData icon,
+    required Color color,
+  }) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withOpacity(0.15),
+            color.withOpacity(0.08),
+            Colors.white.withOpacity(0.95),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: color.withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
             spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.8),
+            blurRadius: 8,
+            offset: const Offset(-4, -4),
           ),
         ],
       ),
@@ -656,83 +600,105 @@ class _TongQuanScreenState extends State<TongQuanScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => LichSuGhiChep(maKH: widget.maKH),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
-                  );
-                },
-                icon: Icon(Icons.history, size: 18),
-                label: Text("Lịch sử ghi chép", style: TextStyle(fontSize: 14)),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.blue,
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ],
+                ),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: color.withOpacity(0.2)),
+                ),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: color,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
             ],
           ),
-          // ... Bạn có thể thêm chart hoặc các widget khác cho thu chi ở đây ...
-          SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildSummaryCard(
-                  title: "Thu",
-                  amount: totalIncome,
-                  icon: Icons.arrow_downward,
-                  color: Colors.green,
-                ),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: _buildSummaryCard(
-                  title: "Chi",
-                  amount: totalExpense,
-                  icon: Icons.arrow_upward,
-                  color: Colors.red,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Container(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, color.withOpacity(0.02)],
+              ),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: color.withOpacity(0.1)),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Số dư",
+                  "Số tiền:",
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  NumberFormat.currency(
+                    locale: 'vi_VN',
+                    symbol: '',
+                  ).format(amount).replaceAll(',', '.'),
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue[700],
+                    fontSize: 24,
+                    color: color,
+                    letterSpacing: 0.5,
+                    shadows: [
+                      Shadow(
+                        offset: const Offset(1, 1),
+                        blurRadius: 2,
+                        color: color.withOpacity(0.3),
+                      ),
+                    ],
                   ),
                 ),
                 Text(
-                  "${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(totalIncome - totalExpense)}",
+                  "đ",
                   style: TextStyle(
-                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color:
-                        (totalIncome - totalExpense) >= 0
-                            ? Colors.green
-                            : Colors.red,
+                    fontSize: 16,
+                    color: color.withOpacity(0.8),
                   ),
                 ),
               ],
@@ -743,22 +709,379 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     );
   }
 
-  // Đổi tên hàm cũ thành _buildExpenseChartCard
+  Widget _buildIncomeChartCard(String title, Map<String, double> data) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, primaryColor.withOpacity(0.05)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      primaryColor.withOpacity(0.1),
+                      primaryColor.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: primaryColor.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.analytics_rounded,
+                        color: primaryColor,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      primaryColor.withOpacity(0.1),
+                      primaryColor.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => LichSuGhiChep(maKH: widget.maKH),
+                      ),
+                    );
+                  },
+                  icon: Icon(
+                    Icons.history_rounded,
+                    size: 18,
+                    color: primaryColor,
+                  ),
+                  label: Text(
+                    "Lịch sử",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: primaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.green.withOpacity(0.25),
+                      Colors.green.withOpacity(0.15),
+                      Colors.white,
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.green.withOpacity(0.4),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 6),
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.green.withOpacity(
+                              0.3,
+                            ), // Tăng từ 0.2 lên 0.3
+                            Colors.green.withOpacity(
+                              0.2,
+                            ), // Tăng từ 0.1 lên 0.2
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.withOpacity(
+                              0.4,
+                            ), // Tăng từ 0.3 lên 0.4
+                            blurRadius: 8, // Tăng từ 6 lên 8
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.trending_up_rounded,
+                        color: Colors.green,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Thu",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color:
+                                  Colors.green.shade700, // Thay đổi để đậm hơn
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Số tiền:",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  Colors
+                                      .grey[700], // Thay đổi từ grey[600] thành grey[700]
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            NumberFormat.currency(
+                              locale: 'vi_VN',
+                              symbol: '',
+                            ).format(totalIncome).replaceAll(',', '.'),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              color:
+                                  Colors.green.shade700, // Thay đổi để đậm hơn
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Text(
+                            "đ",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color:
+                                  Colors.green.shade600, // Thay đổi để đậm hơn
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12), // Khoảng cách giữa 2 hàng
+              // Hàng thứ hai - Ô Chi
+              Container(
+                width: double.infinity, // Chiếm toàn bộ chiều rộng
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.red.withOpacity(0.25), // Tăng từ 0.15 lên 0.25
+                      Colors.red.withOpacity(0.15), // Tăng từ 0.08 lên 0.15
+                      Colors
+                          .white, // Thay đổi từ Colors.white.withOpacity(0.95) thành Colors.white
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.red.withOpacity(0.4), // Tăng từ 0.3 lên 0.4
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.red.withOpacity(0.3), // Tăng từ 0.2 lên 0.3
+                      blurRadius: 15, // Tăng từ 12 lên 15
+                      offset: const Offset(0, 6),
+                      spreadRadius: 2, // Tăng từ 1 lên 2
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.red.withOpacity(0.3), // Tăng từ 0.2 lên 0.3
+                            Colors.red.withOpacity(0.2), // Tăng từ 0.1 lên 0.2
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(
+                              0.4,
+                            ), // Tăng từ 0.3 lên 0.4
+                            blurRadius: 8, // Tăng từ 6 lên 8
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.trending_down_rounded,
+                        color: Colors.red,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Chi",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Colors.red.shade700, // Thay đổi để đậm hơn
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Số tiền:",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                                  Colors
+                                      .grey[700], // Thay đổi từ grey[600] thành grey[700]
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            NumberFormat.currency(
+                              locale: 'vi_VN',
+                              symbol: '',
+                            ).format(totalExpense).replaceAll(',', '.'),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              color: Colors.red.shade700, // Thay đổi để đậm hơn
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Text(
+                            "đ",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.red.shade600, // Thay đổi để đậm hơn
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildExpenseChartCard(
     String title,
     Map<String, Map<String, dynamic>> data,
   ) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, primaryColor.withOpacity(0.05)],
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
+            color: primaryColor.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -768,17 +1091,30 @@ class _TongQuanScreenState extends State<TongQuanScreen>
           Text(
             title,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: primaryColor,
             ),
           ),
-          SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
+          const SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [primaryColor, primaryColor.withOpacity(0.8)],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryColor.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: ElevatedButton.icon(
               onPressed: () async {
-                // Chờ khi quay lại từ màn hình thêm hạn mức thì tự động load lại
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -787,18 +1123,24 @@ class _TongQuanScreenState extends State<TongQuanScreen>
                 );
                 await fetchExpenseData();
               },
-              icon: Icon(Icons.add),
-              label: Text("Thêm hạn mức chi"),
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                "Thêm hạn mức chi",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 16),
           if (data.isEmpty)
             Container(
               height: 100,
@@ -970,433 +1312,242 @@ class _TongQuanScreenState extends State<TongQuanScreen>
     );
   }
 
-  Widget _buildTravelCard() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Du lịch",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 16),
-          Container(
-            height: 200,
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Hãy tạo chuyến đi để theo dõi cùng sổ thu chi",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                ),
-                SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ThemChuyenDi()),
-                    );
-                  },
-                  icon: Icon(Icons.add),
-                  label: Text("Thêm mới"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExchangeRateCard() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Tra cứu tỷ giá",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => TraCuuTyGia()),
-                  );
-                },
-                icon: Icon(Icons.arrow_forward),
-                color: Colors.blue,
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-          Container(
-            height: 100,
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Xem tỷ giá và quy đổi tiền tệ",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                ),
-                SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => TraCuuTyGia()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: Text("Tra cứu ngay"),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExpenseAnalysisCard() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Phân tích chi tiêu",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Từ tháng",
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-              DropdownButton<int>(
-                value: 1,
-                items:
-                    List.generate(12, (index) => index + 1)
-                        .map(
-                          (month) => DropdownMenuItem(
-                            value: month,
-                            child: Text("Tháng $month"),
-                          ),
-                        )
-                        .toList(),
-                onChanged: (value) {
-                  // TODO: Handle from month change
-                },
-              ),
-              Text(
-                "đến tháng",
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-              DropdownButton<int>(
-                value: 12,
-                items:
-                    List.generate(12, (index) => index + 1)
-                        .map(
-                          (month) => DropdownMenuItem(
-                            value: month,
-                            child: Text("Tháng $month"),
-                          ),
-                        )
-                        .toList(),
-                onChanged: (value) {
-                  // TODO: Handle to month change
-                },
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-          SizedBox(height: 200, child: _buildBarChart()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBarChart() {
-    // Sample data - replace with your actual data
-    final List<double> monthlyData = []; // Empty list for no data case
-
-    if (monthlyData.isEmpty) {
-      return Center(
-        child: Text(
-          "Không có dữ liệu",
-          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-        ),
-      );
-    }
-
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: 20, // Set max Y value to 20
-        minY: 0,
-        barTouchData: BarTouchData(
-          enabled: true,
-          touchTooltipData: BarTouchTooltipData(
-            tooltipRoundedRadius: 8,
-            tooltipPadding: EdgeInsets.all(8),
-            tooltipMargin: 8,
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              return BarTooltipItem(
-                '${rod.toY.toInt()}',
-                TextStyle(color: Colors.white),
-              );
-            },
-          ),
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                return Text(
-                  'Tháng ${value.toInt()}',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                );
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              interval: 5, // Show every 5 units
-              getTitlesWidget: (value, meta) {
-                return Text(
-                  '${value.toInt()}',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                );
-              },
-            ),
-          ),
-        ),
-        borderData: FlBorderData(show: false),
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          horizontalInterval: 5, // Grid lines every 5 units
-          getDrawingHorizontalLine: (value) {
-            return FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 1);
-          },
-        ),
-        barGroups: List.generate(
-          monthlyData.length,
-          (index) => BarChartGroupData(
-            x: index + 1,
-            barRods: [
-              BarChartRodData(
-                toY: monthlyData[index],
-                color: Colors.blue,
-                width: 20,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildUtilitiesCard() {
     final List<Map<String, dynamic>> utilities = [
-      {'icon': Icons.flight, 'label': 'Du lịch'},
-      {'icon': Icons.currency_exchange, 'label': 'Tra cứu tỷ giá'},
-      {'icon': Icons.shopping_cart, 'label': 'Danh sách mua sắm'},
-      {'icon': Icons.account_balance_wallet, 'label': 'Chia tiền'},
-      {'icon': Icons.receipt_long, 'label': 'Thuế TNCN'},
-      {'icon': Icons.file_download, 'label': 'Xuất khẩu dữ liệu'},
-      {'icon': Icons.facebook, 'label': 'Fanpage'},
-      {'icon': Icons.group, 'label': 'Group'},
+      {
+        'icon': Icons.currency_exchange_rounded,
+        'label': 'Tỷ giá',
+        'color': const Color(0xFF4CAF50),
+      },
+      {
+        'icon': Icons.account_balance_wallet_rounded,
+        'label': 'Chia tiền',
+        'color': const Color(0xFF9C27B0),
+      },
+      {
+        'icon': Icons.receipt_long_rounded,
+        'label': 'Thuế TNCN',
+        'color': const Color(0xFFF44336),
+      },
+      {
+        'icon': Icons.calculate_rounded,
+        'label': 'Tính lãi vay',
+        'color': const Color(0xFFFF9800),
+      },
+      {
+        'icon': Icons.savings_rounded,
+        'label': 'Tính lãi TK',
+        'color': const Color(0xFF2196F3),
+      },
     ];
 
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, primaryColor.withOpacity(0.05)],
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: Offset(0, 2),
+            color: primaryColor.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Tiện ích khác",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  primaryColor.withOpacity(0.1),
+                  primaryColor.withOpacity(0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: primaryColor.withOpacity(0.2)),
             ),
-          ),
-          SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 1,
-            ),
-            itemCount: utilities.length,
-            itemBuilder: (context, index) {
-              return InkWell(
-                onTap: () {
-                  // TODO: Handle utility tap
-                },
-                child: Container(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        utilities[index]['icon'],
-                        color: Colors.blue,
-                        size: 24,
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        utilities[index]['label'],
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: Colors.blue),
+                    gradient: LinearGradient(
+                      colors: [primaryColor, primaryColor.withOpacity(0.8)],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: primaryColor.withOpacity(0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
+                  child: Icon(
+                    Icons.apps_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
-              );
-            },
+                const SizedBox(width: 12),
+                Text(
+                  "Tiện ích khác",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
-    );
-  }
-  Widget _buildSummaryCard({
-    required String title,
-    required double amount,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 28),
-          SizedBox(width: 12),
+          const SizedBox(height: 20),
+          // Sử dụng layout cải thiện cho 5 icons
           Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              // Hàng đầu tiên: 3 icons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children:
+                    utilities.take(3).map((utility) {
+                      return _buildUtilityItem(utility);
+                    }).toList(),
               ),
-              SizedBox(height: 4),
-              Text(
-                NumberFormat.currency(
-                  locale: 'vi_VN',
-                  symbol: '₫',
-                ).format(amount),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: color,
-                ),
+              const SizedBox(height: 16),
+              // Hàng thứ hai: 2 icons ở giữa
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  const SizedBox(width: 80), // Spacer
+                  ...utilities.skip(3).take(2).map((utility) {
+                    return _buildUtilityItem(utility);
+                  }).toList(),
+                  const SizedBox(width: 80), // Spacer
+                ],
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildUtilityItem(Map<String, dynamic> utility) {
+    return InkWell(
+      onTap: () {
+        _handleUtilityTap(utility['label']);
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 80,
+        height: 90,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              utility['color'].withOpacity(0.15),
+              utility['color'].withOpacity(0.08),
+              Colors.white.withOpacity(0.95),
+            ],
+            stops: const [0.0, 0.5, 1.0],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: utility['color'].withOpacity(0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: utility['color'].withOpacity(0.25),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+              spreadRadius: 1,
+            ),
+            BoxShadow(
+              color: Colors.white.withOpacity(0.8),
+              blurRadius: 6,
+              offset: const Offset(-2, -2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [utility['color'], utility['color'].withOpacity(0.8)],
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: utility['color'].withOpacity(0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(utility['icon'], color: Colors.white, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                utility['label'],
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: utility['color'],
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleUtilityTap(String title) {
+    Widget? screen;
+    switch (title) {
+      case 'Tỷ giá':
+        screen = const TraCuuTyGiaScreen();
+        break;
+      case 'Chia tiền':
+        screen = ChiaTienScreen();
+        break;
+      case 'Thuế TNCN':
+        screen = const TinhThueScreen();
+        break;
+      case 'Tính lãi vay':
+        screen = TinhLaiVayScreen();
+        break;
+      case 'Tính lãi TK':
+        screen = TinhLaiTienGuiScreen();
+        break;
+    }
+
+    if (screen != null) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => screen!));
+    }
   }
 }

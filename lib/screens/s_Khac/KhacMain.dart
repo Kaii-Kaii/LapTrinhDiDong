@@ -21,41 +21,108 @@ class KhacMain extends StatefulWidget {
 }
 
 class _KhacMainState extends State<KhacMain> {
-  final List<GirdItem> tienIchList = [
-    GirdItem(title: 'Tra cứu tỷ giá', icon: Icons.money, iconColor: Colors.blue),
-    GirdItem(title: 'Tính lãi vay', icon: Icons.calculate, iconColor: Colors.teal),
-    GirdItem(title: 'Tiết kiệm gửi góp', icon: Icons.savings, iconColor: Colors.red),
-    GirdItem(title: 'Thuế TNCN', icon: Icons.people_outline, iconColor: Colors.green),
-    GirdItem(title: 'Chia tiền', icon: Icons.money_rounded, iconColor: Colors.orange),
-  ];
+  final Color primaryColor = const Color(0xFF03A9F4);
+  final Color backgroundColor = const Color(0xFFF8FAFB);
 
-  final List<Map<String, dynamic>> settingsItems = [
-    {'icon': Icons.settings, 'title': 'Cài đặt chung', 'onTap': null},
-    {'icon': Icons.storage, 'title': 'Cài đặt dữ liệu', 'onTap': null},
-    {'icon': Icons.share, 'title': 'Giới thiệu cho bạn', 'onTap': null, 'trailing': Text('Chia sẻ ngay', style: TextStyle(color: Colors.blue))},
-    {'icon': Icons.star_border, 'title': 'Đánh giá ứng dụng', 'onTap': null},
-    {'icon': Icons.feedback_outlined, 'title': 'Góp ý với nhà phát triển', 'onTap': null},
-    {'icon': Icons.info_outline, 'title': 'Trợ giúp và thông tin', 'onTap': null},
+  final List<GirdItem> tienIchList = [
+    GirdItem(
+      title: 'Tra cứu tỷ giá',
+      icon: Icons.currency_exchange_rounded,
+      iconColor: const Color(0xFF03A9F4),
+    ),
+    GirdItem(
+      title: 'Tính lãi vay',
+      icon: Icons.calculate_rounded,
+      iconColor: const Color(0xFF0288D1),
+    ),
+    GirdItem(
+      title: 'Tiết kiệm gửi góp',
+      icon: Icons.savings_rounded,
+      iconColor: const Color(0xFF0277BD),
+    ),
+    GirdItem(
+      title: 'Thuế TNCN',
+      icon: Icons.account_balance_wallet_rounded,
+      iconColor: const Color(0xFF0288D1),
+    ),
+    GirdItem(
+      title: 'Chia tiền',
+      icon: Icons.payments_rounded,
+      iconColor: const Color(0xFF03A9F4),
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(toolbarHeight: 0, backgroundColor: Colors.white, elevation: 0),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildUserInfo(widget.maKH),
-            _buildPremiumBanner(),
-            _buildPointAndCode(),
-            _buildGridSection("Tiện ích", tienIchList),
-            const SizedBox(height: 12),
-            _buildSettingsList(),
-            const SizedBox(height: 12),
-            _buildSyncInfo(),
-          ],
+      backgroundColor: backgroundColor,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        toolbarHeight: 0,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              primaryColor.withOpacity(0.1),
+              backgroundColor,
+              backgroundColor,
+            ],
+            stops: const [0.0, 0.3, 1.0],
+          ),
         ),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 40),
+              _buildHeader(),
+              _buildUserInfo(widget.maKH),
+              _buildPremiumBanner(),
+              _buildPointAndCode(),
+              _buildListSectionFromGridItem("Tiện ích", tienIchList),
+              const SizedBox(height: 20),
+              _buildSettingsList(),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryColor.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Text(
+              'Hồ Sơ Cá Nhân',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -77,44 +144,130 @@ class _KhacMainState extends State<KhacMain> {
       future: getTaiKhoanFromMaKH(maKH),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
+          return Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: primaryColor.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              ),
+            ),
           );
         }
-
         final taiKhoan = snapshot.data;
         if (taiKhoan == null) {
-          return const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text("Không tìm thấy thông tin người dùng"),
+          return Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: const Text("Không tìm thấy thông tin người dùng"),
           );
         }
-
         return Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Colors.white, primaryColor.withOpacity(0.05)],
+            ),
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.lightBlue,
-                child: Text(
-                  taiKhoan.tendangnhap[0].toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [primaryColor, primaryColor.withOpacity(0.7)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 35,
+                  backgroundColor: Colors.transparent,
+                  child: Text(
+                    taiKhoan.tendangnhap[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 28,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(taiKhoan.tendangnhap, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text(taiKhoan.email, style: const TextStyle(color: Colors.grey)),
+                    Text(
+                      taiKhoan.tendangnhap,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      taiKhoan.email,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 15),
+                    ),
                   ],
                 ),
               ),
-              const Icon(Icons.notifications_none),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      primaryColor.withOpacity(0.1),
+                      primaryColor.withOpacity(0.05),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Icon(
+                    Icons.notifications_rounded,
+                    color: primaryColor,
+                    size: 24,
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -124,18 +277,48 @@ class _KhacMainState extends State<KhacMain> {
 
   Widget _buildPremiumBanner() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Colors.orangeAccent, Colors.deepOrange]),
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [primaryColor, primaryColor.withOpacity(0.8)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text("Nâng cấp Premium", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          SizedBox(width: 10),
-          Icon(Icons.rocket_launch, color: Colors.white),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.diamond_rounded,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Text(
+            "Nâng cấp Premium",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              letterSpacing: 0.5,
+            ),
+          ),
         ],
       ),
     );
@@ -146,9 +329,15 @@ class _KhacMainState extends State<KhacMain> {
       future: KhachHangService.fetchKhachHangByMaKH(widget.maKH),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Container(
+            margin: const EdgeInsets.all(20),
+            child: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+              ),
+            ),
+          );
         }
-
         final khachHang = snapshot.data;
         if (khachHang == null) {
           return const Padding(
@@ -156,14 +345,11 @@ class _KhacMainState extends State<KhacMain> {
             child: Text("Không tìm thấy thông tin khách hàng"),
           );
         }
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Row(
             children: [
-              _buildInfoCard(Icons.monetization_on, "Xu của bạn", "${khachHang.xu} xu", Colors.orange),
-              const SizedBox(width: 8),
-              _buildInfoCard(Icons.share, "Mã chia sẻ", "44010", Colors.blue),
+              // Có thể thêm thông tin điểm số hoặc mã khách hàng ở đây
             ],
           ),
         );
@@ -171,65 +357,90 @@ class _KhacMainState extends State<KhacMain> {
     );
   }
 
-  Widget _buildInfoCard(IconData icon, String label, String value, Color color) {
-    return Expanded(
-      child: Container(
-        height: 60,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(children: [
-              Icon(icon, color: color),
-              const SizedBox(width: 8),
-              Text(label, style: const TextStyle(fontSize: 14)),
-            ]),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGridSection(String title, List<GirdItem> items) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+  Widget _buildListSectionFromGridItem(String title, List<GirdItem> items) {
+    return Container(
+      margin: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 12),
-          GridView.builder(
-            shrinkWrap: true,
-            itemCount: items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.75,
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 16),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: primaryColor,
+              ),
             ),
+          ),
+          ListView.separated(
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final item = items[index];
               return InkWell(
+                borderRadius: BorderRadius.circular(20),
                 onTap: () => _handleTap(item.title),
                 child: Container(
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
-                  ),
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: item.iconColor.withOpacity(0.1),
-                        child: Icon(item.icon, color: item.iconColor),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Colors.white, item.iconColor.withOpacity(0.03)],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: item.iconColor.withOpacity(0.1),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
                       ),
-                      const SizedBox(height: 8),
-                      Text(item.title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11)),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              item.iconColor.withOpacity(0.1),
+                              item.iconColor.withOpacity(0.05),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(item.icon, color: item.iconColor, size: 28),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Text(
+                          item.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: item.iconColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: item.iconColor,
+                          size: 16,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -267,61 +478,90 @@ class _KhacMainState extends State<KhacMain> {
   }
 
   Widget _buildSettingsList() {
-    return Column(
-      children: [
-        ...settingsItems.map((item) => _buildSettingsTile(
-              item['icon'],
-              item['title'],
-              item['onTap'] ?? () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Chức năng '${item['title']}' đang phát triển")),
-                );
-              },
-              trailing: item['trailing'],
-            )),
-        _buildSettingsTile(Icons.logout, "Đăng xuất", _logout),
-      ],
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
+          _buildSettingsTile(
+            Icons.logout_rounded,
+            "Đăng xuất",
+            _logout,
+            Colors.red,
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildSettingsTile(IconData icon, String title, VoidCallback onTap, {Widget? trailing}) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.grey),
-      title: Text(title),
-      trailing: trailing ?? const Icon(Icons.chevron_right),
-      onTap: onTap,
-      tileColor: Colors.white,
-      dense: true,
+  Widget _buildSettingsTile(
+    IconData icon,
+    String title,
+    VoidCallback onTap,
+    Color iconColor,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.white, iconColor.withOpacity(0.03)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: iconColor.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [iconColor.withOpacity(0.1), iconColor.withOpacity(0.05)],
+            ),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: iconColor, size: 24),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            color: Colors.black87,
+          ),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: iconColor,
+            size: 16,
+          ),
+        ),
+        onTap: onTap,
+      ),
     );
   }
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Xóa toàn bộ dữ liệu login
+    await prefs.clear();
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (_) => false,
-    );
-  }
-
-  Widget _buildSyncInfo() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Colors.white,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
-          Row(
-            children: [
-              Icon(Icons.sync, color: Colors.blue),
-              SizedBox(width: 8),
-              Text("Đồng bộ dữ liệu"),
-            ],
-          ),
-          Text("24/04/2025 12:09", style: TextStyle(color: Colors.grey)),
-        ],
-      ),
     );
   }
 }

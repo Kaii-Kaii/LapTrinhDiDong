@@ -12,12 +12,12 @@ class TinhThueScreen extends StatefulWidget {
 
 class _TinhThueScreenState extends State<TinhThueScreen> {
   final _formKey = GlobalKey<FormState>();
-
   final _thuNhapController = TextEditingController();
   final _luongDongBHController = TextEditingController();
   final _nguoiPhuThuocController = TextEditingController();
 
   final NumberFormat _currencyFormatter = NumberFormat("#,##0", "vi_VN");
+  final Color primaryColor = const Color(0xFF03A9F4);
 
   bool _isFormattingThuNhap = false;
   bool _isFormattingLuongBH = false;
@@ -33,14 +33,12 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
   double thuePhaiDong = 0;
   double thuNhapSauThue = 0;
 
-  // Hàm parse tiền tệ: chỉ giữ số rồi parse
   double _parseCurrency(String formatted) {
     String onlyDigits = formatted.replaceAll(RegExp(r'[^0-9]'), '');
     if (onlyDigits.isEmpty) return 0;
     return double.parse(onlyDigits);
   }
 
-  // Hàm format tiền tệ dùng chung, tránh vòng lặp định dạng
   void _formatCurrency(
     TextEditingController controller,
     String value,
@@ -67,7 +65,6 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
     setFlag(false);
   }
 
-  // Hàm tính thuế TNCN theo bậc thuế
   double _tinhThueTNCN(double thuNhapTinhThue) {
     double thue = 0;
     final bac = [
@@ -124,214 +121,680 @@ class _TinhThueScreenState extends State<TinhThueScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Tính thuế TNCN',
-          style: TextStyle(color: Colors.white),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              primaryColor.withOpacity(0.1),
+              Colors.white,
+              primaryColor.withOpacity(0.05),
+            ],
+            stops: const [0.0, 0.4, 1.0],
+          ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        centerTitle: true,
-        backgroundColor: Colors.blue,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+        child: Stack(
           children: [
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      _buildCurrencyField(
-                        controller: _thuNhapController,
-                        label: 'Thu nhập hàng tháng (VND)',
-                        hint: '',
-                        icon: Icons.attach_money,
-                        onChanged: (val) {
-                          _formatCurrency(
-                            _thuNhapController,
-                            val,
-                            _isFormattingThuNhap,
-                            (flag) => _isFormattingThuNhap = flag,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCurrencyField(
-                        controller: _luongDongBHController,
-                        label: 'Lương đóng BH (VND)',
-                        hint: '',
-                        icon: Icons.account_balance_wallet,
-                        onChanged: (val) {
-                          _formatCurrency(
-                            _luongDongBHController,
-                            val,
-                            _isFormattingLuongBH,
-                            (flag) => _isFormattingLuongBH = flag,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _nguoiPhuThuocController,
-                        decoration: InputDecoration(
-                          labelText: 'Số người phụ thuộc',
-                          hintText: '',
-                          prefixIcon: const Icon(Icons.people),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        keyboardType: TextInputType.number,
-                        onTap: () {
-                          _nguoiPhuThuocController.clear();
-                        },
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Vui lòng nhập số người phụ thuộc';
-                          }
-                          if (int.tryParse(value) == null) {
-                            return 'Phải là số nguyên hợp lệ';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 30),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _tinhToan,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: const Text(
-                            'Tính toán',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+            // Background decorations
+            Positioned(
+              top: -120,
+              right: -120,
+              child: Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: primaryColor.withOpacity(0.1),
                 ),
               ),
             ),
-            const SizedBox(height: 30),
-            if (thuNhap > 0)
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Kết quả tính toán',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const Divider(height: 30, thickness: 2),
-                      _buildResultRow("Thu nhập", thuNhap),
-                      _buildResultRow("Lương đóng BH", luongDongBH),
-                      _buildResultRow("Trích nộp BH (10.5%)", trichNopBH),
-                      const Divider(),
-                      _buildResultRow("Giảm trừ bản thân", 11000000),
-                      _buildResultRow(
-                        "Giảm trừ người phụ thuộc",
-                        giamTruNguoiPhuThuoc,
-                      ),
-                      const Divider(),
-                      _buildResultRow("Thu nhập tính thuế", thuNhapTinhThue),
-                      _buildResultRow("Thuế phải đóng", thuePhaiDong),
-                      const Divider(),
-                      _buildResultRow("Thu nhập sau thuế", thuNhapSauThue),
-                    ],
-                  ),
+            Positioned(
+              top: 150,
+              left: -80,
+              child: Container(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: primaryColor.withOpacity(0.08),
                 ),
               ),
+            ),
+            Positioned(
+              bottom: -100,
+              right: -60,
+              child: Container(
+                width: 180,
+                height: 180,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: primaryColor.withOpacity(0.12),
+                ),
+              ),
+            ),
+            // Main content
+            SafeArea(
+              child: Column(
+                children: [
+                  // Custom AppBar
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryColor.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.arrow_back_ios,
+                              color: primaryColor,
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryColor.withOpacity(0.15),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              "Tính thuế TNCN",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 10),
+
+                          // Header với icon
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  primaryColor,
+                                  primaryColor.withOpacity(0.8),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryColor.withOpacity(0.3),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.receipt_long,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Tính thuế thu nhập cá nhân",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        "Nhập thông tin để tính toán thuế TNCN",
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 30),
+
+                          // Form inputs
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryColor.withOpacity(0.1),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  children: [
+                                    _buildInputField(
+                                      controller: _thuNhapController,
+                                      label: 'Thu nhập hàng tháng',
+                                      icon: Icons.attach_money,
+                                      suffix: 'VNĐ',
+                                      onChanged: (val) {
+                                        _formatCurrency(
+                                          _thuNhapController,
+                                          val,
+                                          _isFormattingThuNhap,
+                                          (flag) => _isFormattingThuNhap = flag,
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 20),
+                                    _buildInputField(
+                                      controller: _luongDongBHController,
+                                      label: 'Lương đóng bảo hiểm',
+                                      icon: Icons.account_balance_wallet,
+                                      suffix: 'VNĐ',
+                                      onChanged: (val) {
+                                        _formatCurrency(
+                                          _luongDongBHController,
+                                          val,
+                                          _isFormattingLuongBH,
+                                          (flag) => _isFormattingLuongBH = flag,
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 20),
+                                    _buildNumberField(
+                                      controller: _nguoiPhuThuocController,
+                                      label: 'Số người phụ thuộc',
+                                      icon: Icons.people,
+                                      suffix: 'người',
+                                    ),
+                                    const SizedBox(height: 30),
+
+                                    // Action buttons
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Container(
+                                            height: 56,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: primaryColor,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                _thuNhapController.clear();
+                                                _luongDongBHController.clear();
+                                                _nguoiPhuThuocController
+                                                    .clear();
+                                                setState(() {
+                                                  thuNhap = 0;
+                                                  luongDongBH = 0;
+                                                  nguoiPhuThuoc = 0;
+                                                  trichNopBH = 0;
+                                                  giamTruNguoiPhuThuoc = 0;
+                                                  thuNhapTinhThue = 0;
+                                                  thuePhaiDong = 0;
+                                                  thuNhapSauThue = 0;
+                                                });
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    Colors.transparent,
+                                                foregroundColor: primaryColor,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                ),
+                                              ),
+                                              child: const Text(
+                                                "NHẬP LẠI",
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Container(
+                                            height: 56,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  primaryColor,
+                                                  primaryColor.withOpacity(0.8),
+                                                ],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: primaryColor
+                                                      .withOpacity(0.4),
+                                                  blurRadius: 12,
+                                                  offset: const Offset(0, 6),
+                                                ),
+                                              ],
+                                            ),
+                                            child: ElevatedButton(
+                                              onPressed: _tinhToan,
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    Colors.transparent,
+                                                foregroundColor: Colors.white,
+                                                elevation: 0,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                ),
+                                              ),
+                                              child: const Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(Icons.calculate),
+                                                  SizedBox(width: 8),
+                                                  Text(
+                                                    "TÍNH",
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 30),
+
+                          // Results section
+                          if (thuNhap > 0) _buildResultsCard(),
+
+                          const SizedBox(height: 30),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCurrencyField({
+  Widget _buildInputField({
     required TextEditingController controller,
     required String label,
-    required String hint,
     required IconData icon,
+    required String suffix,
     required Function(String) onChanged,
   }) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.blue),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-      ),
-      onTap: () {
-        controller.clear();
-      },
-      keyboardType: TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Vui lòng nhập $label';
-        }
-        return null;
-      },
-      onChanged: onChanged,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: primaryColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  hintText: "Nhập ${label.toLowerCase()}",
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: primaryColor.withOpacity(0.5)),
+                ),
+                style: TextStyle(
+                  fontSize: 18,
+                  color: primaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+                onTap: () => controller.clear(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Vui lòng nhập $label';
+                  }
+                  return null;
+                },
+                onChanged: onChanged,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                suffix,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: primaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Container(
+          height: 1,
+          margin: const EdgeInsets.only(top: 8),
+          color: primaryColor.withOpacity(0.2),
+        ),
+      ],
     );
   }
 
-  Widget _buildResultRow(String label, double value) {
+  Widget _buildNumberField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required String suffix,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: primaryColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                color: primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  hintText: "Nhập ${label.toLowerCase()}",
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: primaryColor.withOpacity(0.5)),
+                ),
+                style: TextStyle(
+                  fontSize: 18,
+                  color: primaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+                onTap: () => controller.clear(),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Vui lòng nhập $label';
+                  }
+                  if (int.tryParse(value) == null) {
+                    return 'Phải là số nguyên hợp lệ';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                suffix,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: primaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Container(
+          height: 1,
+          margin: const EdgeInsets.only(top: 8),
+          color: primaryColor.withOpacity(0.2),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultsCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: primaryColor.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.assessment, color: primaryColor, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Kết quả tính toán',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Container(
+              height: 2,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primaryColor, primaryColor.withOpacity(0.3)],
+                ),
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildResultItem("Thu nhập", thuNhap, Colors.green),
+            _buildResultItem("Lương đóng BH", luongDongBH, Colors.orange),
+            _buildResultItem("Trích nộp BH (10.5%)", trichNopBH, Colors.red),
+            _buildDivider(),
+            _buildResultItem("Giảm trừ bản thân", 11000000, Colors.blue),
+            _buildResultItem(
+              "Giảm trừ người phụ thuộc",
+              giamTruNguoiPhuThuoc,
+              Colors.blue,
+            ),
+            _buildDivider(),
+            _buildResultItem(
+              "Thu nhập tính thuế",
+              thuNhapTinhThue,
+              Colors.purple,
+            ),
+            _buildResultItem("Thuế phải đóng", thuePhaiDong, Colors.red),
+            _buildDivider(),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    primaryColor.withOpacity(0.1),
+                    primaryColor.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: _buildResultItem(
+                "Thu nhập sau thuế",
+                thuNhapSauThue,
+                primaryColor,
+                isHighlight: true,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultItem(
+    String label,
+    double value,
+    Color color, {
+    bool isHighlight = false,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: isHighlight ? 18 : 16,
+              fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
+              color: Colors.grey[700],
+            ),
           ),
           Text(
             "${_currencyFormatter.format(value)} đ",
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: isHighlight ? 18 : 16,
               fontWeight: FontWeight.bold,
-              color: Colors.blue,
+              color: color,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      color: Colors.grey[300],
     );
   }
 }

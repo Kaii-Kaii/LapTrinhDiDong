@@ -8,7 +8,12 @@ const Color kPrimaryColor = Color(0xFF03A9F4); // Xanh dương giống ảnh
 
 class HangMucScreen extends StatefulWidget {
   final String maNguoiDung;
-  const HangMucScreen({Key? key, required this.maNguoiDung}) : super(key: key);
+  final int initialTabIndex; // Thêm tham số này
+  const HangMucScreen({
+    Key? key,
+    required this.maNguoiDung,
+    this.initialTabIndex = 0, // Mặc định là tab 0 (chi)
+  }) : super(key: key);
 
   @override
   State<HangMucScreen> createState() => _HangMucScreenState();
@@ -24,7 +29,11 @@ class _HangMucScreenState extends State<HangMucScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: widget.initialTabIndex, // Sử dụng initialTabIndex
+    );
     fetchHangMuc();
   }
 

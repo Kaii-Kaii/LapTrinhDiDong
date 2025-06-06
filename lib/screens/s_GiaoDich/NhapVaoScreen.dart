@@ -428,11 +428,22 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
             const SizedBox(height: 6),
             InkWell(
               onTap: () async {
+                // Xác định tab index dựa trên loại giao dịch hiện tại
+                int initialTabIndex;
+                if (_selectedType == 'Thu') {
+                  initialTabIndex = 1; // Tab "MỤC THU" là index 1
+                } else {
+                  initialTabIndex = 0; // Tab "MỤC CHI" là index 0
+                }
+
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder:
-                        (context) => HangMucScreen(maNguoiDung: widget.maKH),
+                        (context) => HangMucScreen(
+                          maNguoiDung: widget.maKH,
+                          initialTabIndex: initialTabIndex, // Truyền tab index
+                        ),
                   ),
                 );
                 if (result != null && result is Map<String, dynamic>) {
@@ -945,15 +956,28 @@ class _NhapVaoScreenState extends State<NhapVaoScreen> {
   }
 
   void _showCategorySelection(BuildContext context) async {
+    // Xác định tab index dựa trên loại giao dịch hiện tại
+    int initialTabIndex;
+    if (_selectedType == 'Thu') {
+      initialTabIndex = 1; // Tab "MỤC THU" là index 1
+    } else {
+      initialTabIndex = 0; // Tab "MỤC CHI" là index 0
+    }
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => HangMucScreen(maNguoiDung: widget.maKH),
+        builder:
+            (context) => HangMucScreen(
+              maNguoiDung: widget.maKH,
+              initialTabIndex: initialTabIndex, // Truyền tab index
+            ),
       ),
     );
-    if (result != null && result is String) {
+    if (result != null && result is Map<String, dynamic>) {
       setState(() {
-        selectedCategory = result;
+        _selectedCategory = result['maDanhMuc'].toString();
+        _selectedCategoryName = result['tenDanhMuc'] as String?;
       });
     }
   }
